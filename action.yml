@@ -9,8 +9,8 @@ branding:
 inputs:
   token:
     description: GitHub Token
-  repository:
-    description: GitHub Repository
+  extractor_repository:
+    description: GitHub Repository where the extractor is located
 outputs: {}
 runs:
   using: docker
