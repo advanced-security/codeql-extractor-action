@@ -1,4 +1,6 @@
+use anyhow::Result;
 use ghactions::prelude::*;
+use ghastoolkit::Repository;
 
 #[derive(Actions, Debug, Clone)]
 #[action(
@@ -20,7 +22,24 @@ pub struct Action {
     #[input(description = "GitHub Token")]
     token: String,
 
-    /// GitHub Repository
-    #[input(description = "GitHub Repository")]
-    repository: String,
+    /// GitHub Repository where the extractor is located
+    #[input(description = "GitHub Repository where the extractor is located")]
+    extractor_repository: String,
+}
+
+impl Action {
+    /// Gets the repository to use for the extractor. If the repository is not provided,
+    /// it will use the repository that the action is running in.
+    pub fn extractor_repository(&self) -> Result<Repository> {
+        let repo = if self.extractor_repository.is_empty() {
+            log::debug!("No extractor repository provided, using the current repository");
+            self.get_repository()?
+        } else {
+            log::debug!("Using the provided extractor repository");
+            self.extractor_repository.clone()
+        };
+        log::info!("Extractor Repository :: {}", repo);
+
+        Ok(Repository::parse(&repo)?)
+    }
 }
