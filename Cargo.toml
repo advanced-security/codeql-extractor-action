@@ -13,6 +13,7 @@ anyhow = "1.0"
 thiserror = "2"
 dotenvy = "0.15"
 # Actions
-ghactions = { version = "0.13", features = ["dotenvy", "generate", "octocrab"] }
+ghactions = { version = "^0.14.1", features = ["dotenvy", "log", "generate", "octocrab", "toolcache"] }
+ghastoolkit = "0.5"
 # GitHub API
 octocrab = "0.43"
