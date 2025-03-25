@@ -14,4 +14,4 @@ inputs:
 outputs: {}
 runs:
   using: docker
-  image: ./container/action.Dockerfile
+  image: ./action.Dockerfile

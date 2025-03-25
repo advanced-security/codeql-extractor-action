@@ -2,6 +2,7 @@ use anyhow::Result;
 use ghactions::prelude::*;
 use ghastoolkit::Repository;
 
+/// This action is for 3rd party CodeQL extractors to be used in GitHub Actions
 #[derive(Actions, Debug, Clone)]
 #[action(
     // Name of the Action
@@ -11,7 +12,7 @@ use ghastoolkit::Repository;
     // Path to the action.yml file
     path = "./action.yml",
     // Path to the Dockerfile
-    image = "./container/action.Dockerfile",
+    image = "./action.Dockerfile",
 
     icon = "shield",
     color = "blue",
