@@ -1,0 +1,47 @@
+name: "Build"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      actions: write
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ matrix.rust-version }}
+      cancel-in-progress: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        rust-version: [ stable, beta, nightly ]
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Setup - Rust Toolchain"
+        uses: dtolnay/rust-toolchain@56f84321dbccf38fb67ce29ab63e4754056677e0
+        if: steps.changes.outputs.src == 'true'
+        with:
+          components: clippy,rustfmt
+          toolchain: ${{ matrix.rust-version }}
+
+      - name: "Formatting Check"
+        run: cargo fmt --check
+
+      - name: "Run build..."
+        run: |
+          set -e
+
+          cargo build --workspace
+          cargo test --workspace
+      
+
