@@ -1,0 +1,8 @@
+name: "codeql-extractor-action"
+repository: "advanced-security/codeql-extractor-action"
+version: 0.1.0
+
+ecosystems:
+  - Docs
+  - Rust
+
