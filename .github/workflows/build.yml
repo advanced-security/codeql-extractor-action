@@ -34,6 +34,18 @@ jobs:
           components: clippy,rustfmt
           toolchain: ${{ matrix.rust-version }}
 
+      - name: "Restore cached Cargo"
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-${{ matrix.rust-version }}-cargo
+
       - name: "Formatting Check"
         run: cargo fmt --check
 
@@ -44,4 +56,16 @@ jobs:
           cargo build --workspace
           cargo test --workspace
       
+      - name: Save Cargo / Rust Cache 
+        id: cache-save
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
