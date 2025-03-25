@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
-use ghactions::{group, groupend, ActionTrait, ToolCache};
+use ghactions::{ActionTrait, ToolCache, group, groupend};
 use log::{debug, info};
 
 mod action;

@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use ghastoolkit::codeql::CodeQLExtractor;
 use ghastoolkit::Repository;
+use ghastoolkit::codeql::CodeQLExtractor;
 use octocrab::models::repos::{Asset, Release};
 
 async fn fetch_releases(client: &octocrab::Octocrab, repository: &Repository) -> Result<Release> {
