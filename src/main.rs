@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use ghactions::{ActionTrait, ToolCache, group, groupend};
+use ghastoolkit::CodeQL;
 use log::{debug, info};
 
 mod action;
@@ -14,7 +15,7 @@ async fn main() -> Result<()> {
     let action = Action::init()?;
     debug!("Action :: {:?}", action);
 
-    group!("Initialise Workflow");
+    group!("Setting up Extractor");
 
     let client = octocrab::instance();
 
@@ -32,14 +33,32 @@ async fn main() -> Result<()> {
         info!("Created Extractor Directory :: {:?}", extractor_path);
     }
 
-    let extractor = extractors::fetch_extractor(&client, &extractor_repo, &extractor_path).await?;
+    let extractor = extractors::fetch_extractor(
+        &client,
+        &extractor_repo,
+        action.attestation(),
+        &extractor_path,
+    )
+    .await
+    .context("Failed to fetch extractor")?;
     log::info!("Extractor :: {:?}", extractor);
+
+    let codeql = CodeQL::init()
+        .search_path(extractor)
+        .build()
+        .await
+        .context("Failed to create CodeQL instance")?;
+    log::info!("CodeQL :: {:?}", codeql);
+
+    let languages = codeql.get_languages().await?;
+    log::info!("Languages :: {:?}", languages);
+
+    // TODO: This is erroring during development
+    // action.set_extractor_path(extractor_path.display().to_string());
 
     groupend!();
 
-    group!("Download and install extractor");
-
-    // TODO: Validate the extractor
+    group!("Running extractor");
 
     groupend!();
 

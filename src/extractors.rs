@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use ghastoolkit::Repository;
-use ghastoolkit::codeql::CodeQLExtractor;
 use octocrab::models::repos::{Asset, Release};
 
 async fn fetch_releases(client: &octocrab::Octocrab, repository: &Repository) -> Result<Release> {
@@ -32,31 +31,57 @@ async fn fetch_releases(client: &octocrab::Octocrab, repository: &Repository) ->
 pub async fn fetch_extractor(
     client: &octocrab::Octocrab,
     repository: &Repository,
+    attest: bool,
     output: &PathBuf,
-) -> Result<CodeQLExtractor> {
-    let release = fetch_releases(client, repository).await?;
-
-    let Some(release_asset) = release.assets.iter().find(|a| a.name.ends_with(".tar.gz")) else {
-        return Err(anyhow::anyhow!("No asset found"));
-    };
-    log::info!("Asset URL :: {}", release_asset.browser_download_url);
-
-    let asset: Asset = client.get(release_asset.url.clone(), None::<&()>).await?;
-
+) -> Result<PathBuf> {
     let extractor_tarball = output.join("extractor.tar.gz");
-    let extractor_path = output.join("extractor-pack").join("codeql-extractor.yml");
+    let extractor_pack = output.join("extractor-pack");
+    let extractor_path = extractor_pack.join("codeql-extractor.yml");
 
     let toolcache = ghactions::ToolCache::new();
 
     if !extractor_tarball.exists() {
         log::info!("Downloading asset to {:?}", extractor_tarball);
 
+        let release = fetch_releases(client, repository).await?;
+
+        let Some(release_asset) = release.assets.iter().find(|a| a.name.ends_with(".tar.gz"))
+        else {
+            return Err(anyhow::anyhow!("No asset found"));
+        };
+        log::info!("Asset URL :: {}", release_asset.browser_download_url);
+
+        let asset: Asset = client.get(release_asset.url.clone(), None::<&()>).await?;
+
         toolcache.download_asset(&asset, &extractor_tarball).await?;
     }
 
-    if extractor_path.exists() {
-        log::info!("Removing existing asset {:?}", extractor_path);
-        std::fs::remove_dir_all(&extractor_path)?;
+    if attest {
+        log::info!("Attesting asset {:?}", extractor_tarball);
+
+        let output = tokio::process::Command::new("gh")
+            .arg("attestation")
+            .arg("verify")
+            .arg("--owner")
+            .arg(repository.owner())
+            .arg(&extractor_tarball)
+            .output()
+            .await?;
+
+        if !output.status.success() {
+            return Err(anyhow::anyhow!(
+                "Attestation failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            ));
+        }
+        log::info!("Attestation successful");
+    } else {
+        log::info!("No attestation requested");
+    }
+
+    if extractor_pack.exists() {
+        log::info!("Removing existing asset {:?}", extractor_pack);
+        std::fs::remove_dir_all(&extractor_pack)?;
     }
 
     log::info!("Extracting asset to {:?}", extractor_path);
@@ -68,8 +93,5 @@ pub async fn fetch_extractor(
         return Err(anyhow::anyhow!("Extractor not found"));
     }
 
-    log::info!("Loading CodeQL Extractor from {:?}", extractor_path);
-    let extractor = CodeQLExtractor::load_path(extractor_path)?;
-
-    Ok(extractor)
+    Ok(extractor_path.canonicalize()?)
 }
