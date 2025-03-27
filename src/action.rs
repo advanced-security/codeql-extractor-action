@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use anyhow::Result;
 use ghactions::prelude::*;
 use ghastoolkit::Repository;
@@ -24,23 +25,42 @@ pub struct Action {
     token: String,
 
     /// GitHub Repository where the extractor is located
-    #[input(description = "GitHub Repository where the extractor is located")]
-    extractor_repository: String,
+    #[input(
+        description = "GitHub Repository where the extractor is located",
+        required = true
+    )]
+    extractor: String,
+
+    /// Attestation
+    #[input(description = "Attestation", default = "false")]
+    attestation: bool,
+
+
+    /// Version of the extractor to use
+    #[output(description = "Version of the extractor to use")]
+    version: String,
+    /// Path to the extractor
+    #[output(description = "Path to the extractor")]
+    extractor_path: String,
 }
 
 impl Action {
     /// Gets the repository to use for the extractor. If the repository is not provided,
     /// it will use the repository that the action is running in.
     pub fn extractor_repository(&self) -> Result<Repository> {
-        let repo = if self.extractor_repository.is_empty() {
+        let repo = if self.extractor.is_empty() {
             log::debug!("No extractor repository provided, using the current repository");
             self.get_repository()?
         } else {
             log::debug!("Using the provided extractor repository");
-            self.extractor_repository.clone()
+            self.extractor.clone()
         };
         log::info!("Extractor Repository :: {}", repo);
 
         Ok(Repository::parse(&repo)?)
+    }
+
+    pub fn attestation(&self) -> bool {
+        self.attestation
     }
 }

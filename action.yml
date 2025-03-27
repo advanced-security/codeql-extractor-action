@@ -9,9 +9,17 @@ branding:
 inputs:
   token:
     description: GitHub Token
-  extractor_repository:
+  extractor:
     description: GitHub Repository where the extractor is located
-outputs: {}
+    required: true
+  attestation:
+    description: Attestation
+    default: 'false'
+outputs:
+  version:
+    description: Version of the extractor to use
+  extractor_path:
+    description: Path to the extractor
 runs:
   using: docker
   image: ./action.Dockerfile

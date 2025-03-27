@@ -23,5 +23,5 @@ dotenvy = "0.15"
 ghactions = { version = "^0.14.1", features = ["dotenvy", "log", "generate", "octocrab", "toolcache"] }
 ghastoolkit = "0.5"
 # GitHub API
-octocrab = "0.43"
+octocrab = "^0.43"
 openssl = { version = "0.10", features = ["vendored"] }
