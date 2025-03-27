@@ -19,5 +19,4 @@ jobs:
         uses: ./
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          extractor_repository: ${{ env.EXTRACTOR_REPOSITORY }}
-
+          extractor: ${{ env.EXTRACTOR_REPOSITORY }}
