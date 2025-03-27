@@ -28,7 +28,7 @@
   uses: advanced-security/codeql-extractor-action@v0.1.0
   with:
     # Repository reference (e.g. "owner/repo", "owner/repo@ref")
-    extractor: "advanced-security/codeql-extractor-iac@v0.1.0"
+    extractor: "advanced-security/codeql-extractor-iac"
     # [optional] Attest the authenticity of the extractor
     attestation: true
 ```
