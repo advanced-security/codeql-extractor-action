@@ -69,3 +69,44 @@ jobs:
             target/
           key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
+  container:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      REGISTRY: ghcr.io
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+
+      - name: Set Container Metadata
+        uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81
+        id: meta
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
+          tags: |
+            # latest / main
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+
+      - name: Build Container ${{ github.repository }}
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        id: build
+        with:
+          file: "./Dockerfile"
+          context: .
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # SBOM Settings
+          sbom: true
+
+      # Upload Software Bill of Materials (SBOM) to GitHub
+      - name: Upload SBOM
+        uses: advanced-security/spdx-dependency-submission-action@5530bab9ee4bbe66420ce8280624036c77f89746  # v0.1.1
+        with:
+          filePath: '.'
+          filePattern: '*.spdx.json'
