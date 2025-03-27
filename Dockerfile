@@ -16,6 +16,10 @@ RUN apk update && \
 FROM docker.io/library/alpine:3.21
 WORKDIR /app
 
+RUN apk update && \
+    apk add --no-cache github-cli && \
+    rm -rf /var/cache/apk/*
+
 COPY --from=builder /app/target/codeql-extractor-action /usr/local/bin/codeql-extractor-action
 
 ENTRYPOINT ["action"]
