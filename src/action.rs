@@ -35,7 +35,6 @@ pub struct Action {
     #[input(description = "Attestation", default = "false")]
     attestation: bool,
 
-
     /// Version of the extractor to use
     #[output(description = "Version of the extractor to use")]
     version: String,
