@@ -40,6 +40,26 @@
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Maintainers 
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="10%"><a href="https://geekmasher.dev"><img src="https://avatars.githubusercontent.com/u/2772944?v=3?s=100" width="100px;" alt="Mathew Payne"/><br /><sub><b>Mathew Payne</b></sub></a><br /><a href="https://github.com/advanced-security/codeql-extractor-iac/commits?author=geekmasher" title="Code">💻</a> <a href="#research-geekmasher" title="Research">🔬</a> <a href="#maintenance-geekmasher" title="Maintenance">🚧</a> <a href="#security-geekmasher" title="Security">🛡️</a> <a href="#ideas-geekmasher" title="Ideas, Planning, & Feedback">🤔</a></td>
+    </tr>
+  </tbody>
+</table>
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+## Support
+
+Support is via [GitHub Issues][issues] or [GitHub Discussions][discussions].
+
 <!-- Resoucres -->
 
 [license]: ./LICENSE
