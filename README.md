@@ -13,7 +13,10 @@
 
 ## Overview
 
-[CodeQL Extractor Action][github] is a GitHub Action that helps none-GitHub [CodeQL] Extractor to integrate with GitHub Actions.
+[CodeQL Extractor Action][github] is a GitHub Action that helps [CodeQL] Extractor to integrate with GitHub Actions.
+
+> [!WARNING]
+> This action downloads the extractor from the GitHub repository. Make sure to use a trusted repository, owner, and extractor.
 
 ## ✨ Features
 
@@ -29,16 +32,26 @@
   with:
     # Repository reference (e.g. "owner/repo", "owner/repo@ref")
     extractor: "advanced-security/codeql-extractor-iac"
+    # [optional]: Language(s)
+    languages: "iac"
     # [optional] Attest the authenticity of the extractor
     attestation: true
 ```
 
-> !WARNING
-> This action downloads the extractor from the GitHub repository. Make sure to use a trusted repository, owner, and extractor.
+## Maintainers / Contributors
+
+- [@GeekMasher](https://github.com/GeekMasher) - Author / Core Maintainer
+
+## Support
+
+Please create [GitHub Issues][github-issues] if there are bugs or feature requests.
+
+This project uses [Sematic Versioning (v2)](https://semver.org/) and with major releases, breaking changes will occur.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the terms of the MIT open source license.
+Please refer to [MIT][license] for the full terms.
 
 <!-- Resoucres -->
 
