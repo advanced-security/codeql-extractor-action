@@ -12,6 +12,8 @@ inputs:
   extractor:
     description: GitHub Repository where the extractor is located
     required: true
+  language:
+    description: Language(s) to use
   attestation:
     description: Attestation
     default: 'false'

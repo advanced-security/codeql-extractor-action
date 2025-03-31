@@ -31,6 +31,10 @@ pub struct Action {
     )]
     extractor: String,
 
+    /// Language(d) to use
+    #[input(description = "Language(s) to use", split = ",")]
+    language: Vec<String>,
+
     /// Attestation
     #[input(description = "Attestation", default = "false")]
     attestation: bool,
@@ -57,6 +61,10 @@ impl Action {
         log::info!("Extractor Repository :: {}", repo);
 
         Ok(Repository::parse(&repo)?)
+    }
+
+    pub fn languages(&self) -> Vec<String> {
+        self.language.clone()
     }
 
     pub fn attestation(&self) -> bool {
