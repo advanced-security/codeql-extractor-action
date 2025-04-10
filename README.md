@@ -32,7 +32,7 @@
   with:
     # Repository reference (e.g. "owner/repo", "owner/repo@ref")
     extractor: "advanced-security/codeql-extractor-iac"
-    # [optional]: Language(s)
+    # [optional]: Language(s) used to verify the extractor
     languages: "iac"
     # [optional] Attest the authenticity of the extractor
     attestation: true
@@ -71,7 +71,7 @@ Please refer to [MIT][license] for the full terms.
 
 ## Support
 
-Support is via [GitHub Issues][issues] or [GitHub Discussions][discussions].
+Support is via [GitHub Issues][github-issues] or [GitHub Discussions][github-discussions].
 
 <!-- Resoucres -->
 
@@ -79,5 +79,6 @@ Support is via [GitHub Issues][issues] or [GitHub Discussions][discussions].
 [github]: https://github.com/advanced-security/codeql-extractor-action
 [github-issues]: https://github.com/advanced-security/codeql-extractor-action/issues
 [github-actions]: https://github.com/advanced-security/codeql-extractor-action/actions
+[github-discussions]: https://github.com/advanced-security/codeql-extractor-action/discussions
 
 [CodeQL]: https://codeql.github.com/
