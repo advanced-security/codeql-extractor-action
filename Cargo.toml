@@ -16,12 +16,13 @@ publish = false
 log = "0.4"
 env_logger = "0.11"
 tokio = { version = "1", features = ["full"] }
-anyhow = "1.0"
+anyhow = "1"
 thiserror = "2"
 dotenvy = "0.15"
 # Actions
-ghactions = { version = "^0.14.1", features = ["dotenvy", "log", "generate", "octocrab", "toolcache"] }
-ghastoolkit = "0.5"
+ghactions = { version = "^0.15", features = ["dotenvy", "log", "generate", "octocrab", "toolcache"] }
+ghastoolkit = "^0.7.1"
 # GitHub API
-octocrab = "^0.43"
+# octocrab = "^0.44"
+octocrab = { git = "https://github.com/GeekMasher/octocrab", rev = "aaefb788cde8b41366298148c3702508f7e963a0" }
 openssl = { version = "0.10", features = ["vendored"] }

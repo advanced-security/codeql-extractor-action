@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use ghactions::{ActionTrait, ToolCache, group, groupend};
-use ghastoolkit::CodeQL;
+use ghastoolkit::{codeql::CodeQLLanguage, CodeQL, CodeQLDatabase};
 use log::{debug, info};
 
 mod action;
@@ -51,14 +51,51 @@ async fn main() -> Result<()> {
     log::info!("CodeQL :: {:?}", codeql);
 
     let languages = codeql.get_languages().await?;
-    log::info!("Languages :: {:?}", languages);
+    log::info!("Languages :: {:#?}", languages);
 
-    // TODO: This is erroring during development
-    // action.set_extractor_path(extractor_path.display().to_string());
+    if !action.languages().is_empty() {
+        log::debug!("Validating languages");
+       for lang in action.languages() {
+            let qllang = CodeQLLanguage::from(lang.as_str());
+            log::info!("Language :: {:?}", qllang);
+
+            if !languages.contains(&qllang) {
+                return Err(anyhow::anyhow!(
+                    "Language {} is not supported by the extractor",
+                    lang
+                ));
+            }
+       }
+    } else {
+        log::info!("No languages provided, using all available languages");
+    }
 
     groupend!();
 
     group!("Running extractor");
+
+    for language in action.languages() {
+        log::info!("Running extractor for language :: {}", language);
+
+        let qllang = CodeQLLanguage::from(language.as_str());
+        let database = CodeQLDatabase::init()
+            .path(format!("./.codeql/db-{}", language))
+            .language(qllang.language())
+            .build()?;
+
+        log::info!("Creating database...");
+        codeql.database(&database)
+            .overwrite()
+            .create()
+            .await?;
+        log::info!("Created database :: {:?}", database);
+
+        log::info!("Running analysis...");
+        codeql.database(&database)
+            .analyze()
+            .await?;
+        log::info!("Analysis complete :: {:?}", database);
+    }
 
     groupend!();
 
