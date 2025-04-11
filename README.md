@@ -28,7 +28,7 @@
 
 ```yml
 - name: "CodeQL Extractor Action"
-  uses: advanced-security/codeql-extractor-action@v0.1.0
+  uses: advanced-security/codeql-extractor-action@v0.0.1
   with:
     # Repository reference (e.g. "owner/repo", "owner/repo@ref")
     extractor: "advanced-security/codeql-extractor-iac"

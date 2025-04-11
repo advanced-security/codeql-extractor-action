@@ -1,0 +1,22 @@
+name: Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push-image:
+    uses: advanced-security/reusable-workflows/.github/workflows/container.yml@main
+    secrets: inherit
+    permissions:
+      id-token: write
+      contents: write
+      packages: write
+      attestations: write
+      security-events: write
+

@@ -22,4 +22,5 @@ RUN apk update && \
 
 COPY --from=builder /app/target/codeql-extractor-action /usr/local/bin/codeql-extractor-action
 
-ENTRYPOINT ["action"]
+ENTRYPOINT ["codeql-extractor-action" ]
+
