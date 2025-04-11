@@ -136,10 +136,8 @@ mod tests {
 
     #[test]
     fn test_extractor_repositories_multiple() {
-        let action = action_with_extractors(vec![
-            "owner/repo1".to_string(),
-            "owner/repo2".to_string(),
-        ]);
+        let action =
+            action_with_extractors(vec!["owner/repo1".to_string(), "owner/repo2".to_string()]);
         let repositories = action.extractor_repositories().unwrap();
         assert_eq!(repositories.len(), 2);
         assert_eq!(repositories[0].to_string(), "owner/repo1");
@@ -165,7 +163,10 @@ mod tests {
     fn test_extractor_repositories_invalid_format() {
         let action = action_with_extractors(vec!["invalid_repo_format".to_string()]);
         let result = action.extractor_repositories();
-        assert!(result.is_err(), "Expected error for invalid repository format");
+        assert!(
+            result.is_err(),
+            "Expected error for invalid repository format"
+        );
     }
 
     #[test]

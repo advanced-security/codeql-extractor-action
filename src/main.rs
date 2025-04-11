@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use ghactions::{ActionTrait, ToolCache, group, groupend};
-use ghastoolkit::codeql::database::queries::CodeQLQueries;
 use ghastoolkit::codeql::CodeQLLanguage;
+use ghastoolkit::codeql::database::queries::CodeQLQueries;
 use ghastoolkit::{CodeQL, CodeQLDatabase, CodeQLExtractor};
 use log::{debug, info};
 
@@ -52,13 +52,16 @@ async fn main() -> Result<()> {
 
         codeql_builder = codeql_builder.search_path(extractor_path.clone());
 
-        extractors.push((extractor_repo.clone(), CodeQLExtractor::load_path(extractor.clone())?));
+        extractors.push((
+            extractor_repo.clone(),
+            CodeQLExtractor::load_path(extractor.clone())?,
+        ));
     }
 
     let codeql = codeql_builder
-            .build()
-            .await
-            .context("Failed to create CodeQL instance")?;
+        .build()
+        .await
+        .context("Failed to create CodeQL instance")?;
 
     log::info!("CodeQL :: {:?}", codeql);
 
