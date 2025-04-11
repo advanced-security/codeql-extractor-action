@@ -18,8 +18,11 @@ jobs:
     steps:
       - name: "Checkout"
         uses: actions/checkout@v4
+
       - name: "Get and Set version"
         id: set-version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -e
 
