@@ -1,3 +1,3 @@
-FROM gcr.io/advanced-security/codeql-extractor-action:v0.1.0
+FROM gcr.io/advanced-security/codeql-extractor-action:v0.0.1
 
 ENTRYPOINT [ "codeql-extractor-action" ]
