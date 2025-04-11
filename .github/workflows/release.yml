@@ -51,7 +51,8 @@ jobs:
     if: ${{ needs.set-version.outputs.release == 'true' }}
     secrets: inherit
     permissions:
-      contents: read
+      contents: write
+      id-token: write
       packages: write
       actions: read
       attestations: write
