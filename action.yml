@@ -14,6 +14,7 @@ inputs:
     required: true
   language:
     description: Language(s) to use
+    required: true
   attestation:
     description: Attestation
     default: 'false'

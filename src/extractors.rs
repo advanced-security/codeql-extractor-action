@@ -1,20 +1,20 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use ghastoolkit::Repository;
+use ghactions_core::repository::reference::RepositoryReference as Repository;
 use octocrab::models::repos::{Asset, Release};
 
 async fn fetch_releases(client: &octocrab::Octocrab, repository: &Repository) -> Result<Release> {
-    let release = if let Some(rel) = repository.reference() {
+    let release = if let Some(rel) = &repository.reference {
         client
-            .repos(repository.owner(), repository.name())
+            .repos(repository.owner.clone(), repository.name.clone())
             .releases()
-            .get_by_tag(rel)
+            .get_by_tag(&rel)
             .await?
     } else {
         // Get Latest Release
         client
-            .repos(repository.owner(), repository.name())
+            .repos(repository.owner.clone(), repository.name.clone())
             .releases()
             .get_latest()
             .await?
@@ -63,7 +63,7 @@ pub async fn fetch_extractor(
             .arg("attestation")
             .arg("verify")
             .arg("--owner")
-            .arg(repository.owner())
+            .arg(repository.owner.clone())
             .arg(&extractor_tarball)
             .output()
             .await?;
@@ -93,5 +93,5 @@ pub async fn fetch_extractor(
         return Err(anyhow::anyhow!("Extractor not found"));
     }
 
-    Ok(extractor_path.canonicalize()?)
+    Ok(extractor_pack.canonicalize()?)
 }

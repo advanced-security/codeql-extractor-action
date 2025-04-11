@@ -21,8 +21,11 @@ thiserror = "2"
 dotenvy = "0.15"
 # Actions
 ghactions = { version = "^0.15", features = ["dotenvy", "log", "generate", "octocrab", "toolcache"] }
-ghastoolkit = "^0.7.1"
+ghactions-core = { version = "^0.15" }
+# ghastoolkit = "^0.7.1"
+ghastoolkit = { version = "^0.7.1", path = "../ghastoolkit-rs/core" }
+
 # GitHub API
-# octocrab = "^0.44"
-octocrab = { git = "https://github.com/GeekMasher/octocrab", rev = "aaefb788cde8b41366298148c3702508f7e963a0" }
+octocrab = "^0.44"
 openssl = { version = "0.10", features = ["vendored"] }
+

@@ -1,10 +1,11 @@
 #![allow(dead_code)]
 use anyhow::Result;
 use ghactions::prelude::*;
-use ghastoolkit::Repository;
+use ghactions_core::repository::reference::RepositoryReference as Repository;
+use ghastoolkit::codeql::CodeQLLanguage;
 
 /// This action is for 3rd party CodeQL extractors to be used in GitHub Actions
-#[derive(Actions, Debug, Clone)]
+#[derive(Actions, Debug, Clone, Default)]
 #[action(
     // Name of the Action
     name = "CodeQL Extractor Action",
@@ -32,7 +33,7 @@ pub struct Action {
     extractor: String,
 
     /// Language(d) to use
-    #[input(description = "Language(s) to use", split = ",")]
+    #[input(description = "Language(s) to use", split = ",", required = true)]
     language: Vec<String>,
 
     /// Attestation
@@ -63,11 +64,69 @@ impl Action {
         Ok(Repository::parse(&repo)?)
     }
 
-    pub fn languages(&self) -> Vec<String> {
-        self.language.clone()
+    pub fn languages(&self) -> Vec<CodeQLLanguage> {
+        self.language
+            .iter()
+            .map(|lang| CodeQLLanguage::from(lang.as_str()))
+            .collect()
+    }
+
+    pub fn validate_languages(&self, codeql_languages: &Vec<CodeQLLanguage>) -> Result<()> {
+        for lang in self.languages() {
+            let mut supported = false;
+            log::debug!("Validating language `{}`", lang);
+            for codeql_lang in codeql_languages {
+                if lang.language().to_lowercase() == codeql_lang.language().to_lowercase() {
+                    log::debug!("Language `{}` is supported", lang);
+                    supported = true;
+                    break;
+                }
+            }
+            if !supported {
+                return Err(anyhow::anyhow!(
+                    "Language(s) `{}` not supported by the extractor",
+                    self.languages()
+                        .iter()
+                        .map(|lang| lang.language())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ));
+            }
+        }
+        Ok(())
     }
 
     pub fn attestation(&self) -> bool {
         self.attestation
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn action() -> Action {
+        Action {
+            extractor: "owner/repo".to_string(),
+            language: vec!["iac".to_string()],
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn test_validate_languages() {
+        let action = action();
+        let codeqllanguages = vec![CodeQLLanguage::from("Python")];
+
+        let result = action.validate_languages(&codeqllanguages);
+        assert!(result.is_err(), "Expected error for unsupported language");
+
+        let codeqllanguages = vec![
+            CodeQLLanguage::from("Python"),
+            CodeQLLanguage::from("java"),
+            CodeQLLanguage::from("iac"),
+        ];
+        let result = action.validate_languages(&codeqllanguages);
+        assert!(result.is_ok(), "Expected no error for supported language");
     }
 }
