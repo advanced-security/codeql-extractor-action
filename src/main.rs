@@ -3,7 +3,8 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use ghactions::{ActionTrait, ToolCache, group, groupend};
 use ghastoolkit::codeql::database::queries::CodeQLQueries;
-use ghastoolkit::{CodeQL, CodeQLDatabase};
+use ghastoolkit::codeql::CodeQLLanguage;
+use ghastoolkit::{CodeQL, CodeQLDatabase, CodeQLExtractor};
 use log::{debug, info};
 
 mod action;
@@ -24,8 +25,8 @@ async fn main() -> Result<()> {
     debug!("ToolCache :: {:?}", toolcache);
 
     // Extractor
-    let extractor_repo = action.extractor_repository()?;
-    info!("Extractor Repository :: {}", extractor_repo);
+    let extractor_repos = action.extractor_repositories()?;
+    info!("Extractor Repositories :: {:?}", extractor_repos);
 
     let extractor_path = PathBuf::from("./extractors");
     if !extractor_path.exists() {
@@ -34,21 +35,31 @@ async fn main() -> Result<()> {
         info!("Created Extractor Directory :: {:?}", extractor_path);
     }
 
-    let extractor = extractors::fetch_extractor(
-        &client,
-        &extractor_repo,
-        action.attestation(),
-        &extractor_path,
-    )
-    .await
-    .context("Failed to fetch extractor")?;
-    log::info!("Extractor :: {:?}", extractor);
+    let mut codeql_builder = CodeQL::init();
+    let mut extractors = Vec::new();
 
-    let codeql = CodeQL::init()
-        .search_path(extractor)
-        .build()
+    // Download and extract the extractor repositories
+    for extractor_repo in extractor_repos {
+        let extractor = extractors::fetch_extractor(
+            &client,
+            &extractor_repo,
+            action.attestation(),
+            &extractor_path,
+        )
         .await
-        .context("Failed to create CodeQL instance")?;
+        .context("Failed to fetch extractor")?;
+        log::info!("Extractor :: {:?}", extractor);
+
+        codeql_builder = codeql_builder.search_path(extractor_path.clone());
+
+        extractors.push((extractor_repo.clone(), CodeQLExtractor::load_path(extractor.clone())?));
+    }
+
+    let codeql = codeql_builder
+            .build()
+            .await
+            .context("Failed to create CodeQL instance")?;
+
     log::info!("CodeQL :: {:?}", codeql);
 
     let languages = codeql.get_languages().await?;
@@ -72,13 +83,22 @@ async fn main() -> Result<()> {
 
     std::fs::create_dir_all(&sarif_output)?;
 
-    for language in action.languages() {
-        let group = format!("Running {} extractor", language.language());
+    for (extractor_repo, extractor) in extractors.iter() {
+        let language = CodeQLLanguage::from(extractor.name.clone());
+
+        if !action.languages().is_empty() {
+            if !action.languages().contains(&language) {
+                log::info!("Skipping language :: {}", language);
+                continue;
+            }
+        }
+
+        let group = format!("Running `{}` extractor", language.language());
         group!(group);
 
         log::info!("Running extractor for language :: {}", language);
 
-        let database_path = databases.join(format!("db-{}", language));
+        let database_path = databases.join(format!("db-{}", language.language()));
         let sarif_path = sarif_output.join(format!("{}-results.sarif", language.language()));
 
         let database = CodeQLDatabase::init()
@@ -92,9 +112,10 @@ async fn main() -> Result<()> {
         codeql.database(&database).overwrite().create().await?;
         log::info!("Created database :: {:?}", database);
 
+        // TODO: Assumes the queries are in the same org
         let queries = CodeQLQueries::from(format!(
             "{}/{}-queries",
-            extractor_repo.owner.clone(),
+            extractor_repo.owner,
             language.language()
         ));
         log::debug!("Queries :: {:?}", queries);

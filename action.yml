@@ -10,11 +10,10 @@ inputs:
   token:
     description: GitHub Token
   extractor:
-    description: GitHub Repository where the extractor is located
+    description: GitHub Repositories where the extractors are located
     required: true
   language:
     description: Language(s) to use
-    required: true
   attestation:
     description: Attestation
     default: 'false'

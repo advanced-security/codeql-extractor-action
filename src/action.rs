@@ -25,15 +25,16 @@ pub struct Action {
     #[input(description = "GitHub Token")]
     token: String,
 
-    /// GitHub Repository where the extractor is located
+    /// GitHub Repositories where the extractors are located
     #[input(
-        description = "GitHub Repository where the extractor is located",
-        required = true
+        description = "GitHub Repositories where the extractors are located",
+        required = true,
+        split = ","
     )]
-    extractor: String,
+    extractor: Vec<String>,
 
-    /// Language(d) to use
-    #[input(description = "Language(s) to use", split = ",", required = true)]
+    /// Language(d) to use, e.g. `iac`, `javascript`, `python`, etc.
+    #[input(description = "Language(s) to use", split = ",")]
     language: Vec<String>,
 
     /// Attestation
@@ -49,19 +50,22 @@ pub struct Action {
 }
 
 impl Action {
-    /// Gets the repository to use for the extractor. If the repository is not provided,
+    /// Gets the repositories to use for the extractors. If no repositories are provided,
     /// it will use the repository that the action is running in.
-    pub fn extractor_repository(&self) -> Result<Repository> {
-        let repo = if self.extractor.is_empty() {
-            log::debug!("No extractor repository provided, using the current repository");
-            self.get_repository()?
-        } else {
-            log::debug!("Using the provided extractor repository");
-            self.extractor.clone()
-        };
-        log::info!("Extractor Repository :: {}", repo);
-
-        Ok(Repository::parse(&repo)?)
+    pub fn extractor_repositories(&self) -> Result<Vec<Repository>> {
+        let mut repositories = Vec::new();
+        for extractor in &self.extractor {
+            let repo = if extractor.is_empty() {
+                log::debug!("No extractor repository provided, using the current repository");
+                self.get_repository()?
+            } else {
+                log::debug!("Using the provided extractor repository");
+                extractor.clone()
+            };
+            log::info!("Extractor Repository :: {}", repo);
+            repositories.push(Repository::parse(&repo)?);
+        }
+        Ok(repositories)
     }
 
     pub fn languages(&self) -> Vec<CodeQLLanguage> {
@@ -107,10 +111,61 @@ mod tests {
 
     fn action() -> Action {
         Action {
-            extractor: "owner/repo".to_string(),
+            extractor: vec!["owner/repo1".to_string(), "owner/repo2".to_string()],
             language: vec!["iac".to_string()],
             ..Default::default()
         }
+    }
+
+    fn action_with_extractors(extractors: Vec<String>) -> Action {
+        Action {
+            extractor: extractors,
+            language: vec!["iac".to_string()],
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn test_extractor_repositories() {
+        let action = action();
+        let repositories = action.extractor_repositories().unwrap();
+        assert_eq!(repositories.len(), 2);
+        assert_eq!(repositories[0].to_string(), "owner/repo1");
+        assert_eq!(repositories[1].to_string(), "owner/repo2");
+    }
+
+    #[test]
+    fn test_extractor_repositories_multiple() {
+        let action = action_with_extractors(vec![
+            "owner/repo1".to_string(),
+            "owner/repo2".to_string(),
+        ]);
+        let repositories = action.extractor_repositories().unwrap();
+        assert_eq!(repositories.len(), 2);
+        assert_eq!(repositories[0].to_string(), "owner/repo1");
+        assert_eq!(repositories[1].to_string(), "owner/repo2");
+    }
+
+    #[test]
+    fn test_extractor_repositories_single() {
+        let action = action_with_extractors(vec!["owner/repo1".to_string()]);
+        let repositories = action.extractor_repositories().unwrap();
+        assert_eq!(repositories.len(), 1);
+        assert_eq!(repositories[0].to_string(), "owner/repo1");
+    }
+
+    #[test]
+    fn test_extractor_repositories_empty() {
+        let action = action_with_extractors(vec![]);
+        let result = action.extractor_repositories();
+        assert!(result.is_err(), "Expected error for empty extractor list");
+    }
+
+    #[test]
+    fn test_extractor_repositories_invalid_format() {
+        let action = action_with_extractors(vec!["invalid_repo_format".to_string()]);
+        let result = action.extractor_repositories();
+        assert!(result.is_err(), "Expected error for invalid repository format");
     }
 
     #[test]
