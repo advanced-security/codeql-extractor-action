@@ -13,7 +13,8 @@
 
 ## Overview
 
-[CodeQL Extractor Action][github] is a GitHub Action that helps [CodeQL] Extractor to integrate with GitHub Actions.
+[CodeQL Extractor Action][github] is a GitHub Action that allows you to specify a CodeQL extractor to be used in your workflows as an author of an Extractor.
+This action is designed to be used in conjunction with the [CodeQL][CodeQL] analysis tool, which is a powerful static analysis tool that can be used to find vulnerabilities in your code.
 
 > [!WARNING]
 > This action downloads the extractor from the GitHub repository. Make sure to use a trusted repository, owner, and extractor.
@@ -38,20 +39,17 @@
     attestation: true
 ```
 
-## Maintainers / Contributors
+## Q&A
 
-- [@GeekMasher](https://github.com/GeekMasher) - Author / Core Maintainer
+**Whats is an Extractor?**
 
-## Support
+A CodeQL extractor is a tool that extracts code from a repository and prepares it for analysis by the CodeQL engine. It is used to convert the code into a format that can be analyzed by CodeQL.
 
-Please create [GitHub Issues][github-issues] if there are bugs or feature requests.
+**How do I create an Extractor?**
 
-This project uses [Sematic Versioning (v2)](https://semver.org/) and with major releases, breaking changes will occur.
+To create an extractor, you need to create a GitHub repository that contains the extractor releases as an artifact / assest in a GitHub release.
+The extractor should be a Tarball file that contains the compiled extractor and all other necessary files for the extractor to run.
 
-## License
-
-This project is licensed under the terms of the MIT open source license.
-Please refer to [MIT][license] for the full terms.
 
 ## Maintainers 
 
@@ -71,7 +69,15 @@ Please refer to [MIT][license] for the full terms.
 
 ## Support
 
-Support is via [GitHub Issues][github-issues] or [GitHub Discussions][github-discussions].
+Please create [GitHub Issues][github-issues] if there are bugs or feature requests.
+
+This project uses [Sematic Versioning (v2)](https://semver.org/) and with major releases, breaking changes will occur.
+
+## License
+
+This project is licensed under the terms of the MIT open source license.
+Please refer to [MIT][license] for the full terms.
+
 
 <!-- Resoucres -->
 
