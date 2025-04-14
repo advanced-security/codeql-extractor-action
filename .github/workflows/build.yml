@@ -113,3 +113,11 @@ jobs:
         with:
           filePath: '.'
           filePattern: '*.spdx.json'
+
+  markdown:
+    uses: advanced-security/reusable-workflows/.github/workflows/markdown-lint.yml@main
+    if: github.event_name == 'pull_request'
+    permissions:
+      id-token: write
+      contents: write
+    secrets: inherit
