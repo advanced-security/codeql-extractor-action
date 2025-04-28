@@ -120,4 +120,5 @@ jobs:
     permissions:
       id-token: write
       contents: write
+      pull-requests: read
     secrets: inherit
