@@ -21,6 +21,7 @@ RUN apk update && \
     rm -rf /var/cache/apk/*
 
 COPY --from=builder /app/target/codeql-extractor-action /usr/local/bin/codeql-extractor-action
+COPY --from=builder /app/entrypoint.sh /entrypoint.sh
 
-ENTRYPOINT ["codeql-extractor-action" ]
+ENTRYPOINT [ "sh", "/entrypoint.sh" ]
 
