@@ -36,6 +36,10 @@ pub struct Action {
     #[input(description = "Language(s) to use", split = ",", required = true)]
     language: Vec<String>,
 
+    /// CodeQL Version
+    #[input(description = "CodeQL Version", default = "latest")]
+    codeql_version: String,
+
     /// Attestation
     #[input(description = "Attestation", default = "false")]
     attestation: bool,
@@ -94,6 +98,10 @@ impl Action {
             }
         }
         Ok(())
+    }
+
+    pub fn codeql_version(&self) -> &str {
+        &self.codeql_version
     }
 
     pub fn attestation(&self) -> bool {

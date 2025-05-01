@@ -15,6 +15,9 @@ inputs:
   language:
     description: Language(s) to use
     required: true
+  codeql_version:
+    description: CodeQL Version
+    default: latest
   attestation:
     description: Attestation
     default: 'false'

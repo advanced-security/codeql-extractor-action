@@ -238,9 +238,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chrono"
-version = "0.4.40"
+version = "0.4.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a7964611d71df112cb1730f2ee67324fcf4d0fc6606acbbe9bfe06df124637c"
+checksum = "c469d952047f47f91b68d1cba3f10d63c11d73e4636f24f08daf0278abf01c4d"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
@@ -269,7 +269,6 @@ dependencies = [
  "dotenvy",
  "env_logger",
  "ghactions",
- "ghactions-core",
  "ghastoolkit",
  "log",
  "octocrab",
@@ -659,9 +658,9 @@ dependencies = [
 
 [[package]]
 name = "ghactions"
-version = "0.15.1"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c069e1d15fde1aa8d0db5e94237ec72bab794afb6a8102c136b67935df876b3"
+checksum = "6c07f7eb08e2d0751a06c206c42f5e362d6ad6fa0c040582c60d3a2a158863ca"
 dependencies = [
  "ghactions-core",
  "ghactions-derive",
@@ -670,9 +669,9 @@ dependencies = [
 
 [[package]]
 name = "ghactions-core"
-version = "0.15.1"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "037ce5de9d0a41e35de031b19e3801574ade1dfec6199616777e03adddc1d187"
+checksum = "deccf1dffbd55566e412cb432a70f58310d113719e36e3b89357a1477e6828fe"
 dependencies = [
  "env_logger",
  "flate2",
@@ -689,13 +688,14 @@ dependencies = [
  "time",
  "tokio",
  "url",
+ "zip",
 ]
 
 [[package]]
 name = "ghactions-derive"
-version = "0.15.1"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0bfc45ae42f1ee359b9b2ab9af8eb3739e3c2ba3abb0a2723929da4a4eb9195"
+checksum = "1df9c6cbb25fe6d00c96dffb8997cc8ba03a819c251a2dc365250392ed368327"
 dependencies = [
  "dotenvy",
  "ghactions-core",
@@ -707,13 +707,14 @@ dependencies = [
 
 [[package]]
 name = "ghastoolkit"
-version = "0.7.2"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6d676aa8e96342ac3316506c898dde4633c9df859ccb5a8b9dc8a3dd32ee58e"
+checksum = "f8f3db9985e62ce0ade0e745be1079446856c4475eebc6b8b04a6d3a6a98a25b"
 dependencies = [
  "anyhow",
  "async-trait",
  "chrono",
+ "ghactions",
  "git2",
  "glob",
  "http",
@@ -781,9 +782,9 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.15.2"
+version = "0.15.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf151400ff0baff5465007dd2f3e717f3fe502074ca563069ce3a6629d07b289"
+checksum = "84b26c544d002229e640969970a2e74021aadf6e2f96372b9c58eff97de08eb3"
 
 [[package]]
 name = "heck"
@@ -1491,9 +1492,9 @@ dependencies = [
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.107"
+version = "0.9.108"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8288979acd84749c744a9014b4382d42b8f7b2592847b5afb2ed29e5d16ede07"
+checksum = "e145e1651e858e820e4860f7b9c5e169bc1d8ce1c86043be79fa7b7634821847"
 dependencies = [
  "cc",
  "libc",
@@ -1812,9 +1813,9 @@ checksum = "719b953e2095829ee67db738b3bfa9fa368c94900df327b3f07fe6e794d2fe1f"
 
 [[package]]
 name = "rustix"
-version = "1.0.5"
+version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d97817398dd4bb2e6da002002db259209759911da105da92bec29ccb12cf58bf"
+checksum = "c71e83d6afe7ff64890ec6b71d6a69bb8a610ab78ce364b3352876bb4c801266"
 dependencies = [
  "bitflags",
  "errno",
@@ -2171,9 +2172,9 @@ dependencies = [
 
 [[package]]
 name = "synstructure"
-version = "0.13.1"
+version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8af7666ab7b6390ab78131fb5b0fce11d6b7a6951602017c35fa82800708971"
+checksum = "728a70f3dbaf5bab7f0c4b1ac8d7ae5ea60a4b5549c8a5914361c99147a709d2"
 dependencies = [
  "proc-macro2",
  "quote",

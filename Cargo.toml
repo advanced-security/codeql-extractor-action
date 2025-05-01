@@ -20,11 +20,9 @@ anyhow = "1"
 thiserror = "2"
 dotenvy = "0.15"
 # Actions
-ghactions = { version = "^0.15", features = ["dotenvy", "log", "generate", "octocrab", "toolcache"] }
-ghactions-core = { version = "^0.15" }
-ghastoolkit = "^0.7.2"
+ghactions = { version = "^0.16", features = ["dotenvy", "log", "generate", "octocrab", "toolcache"] }
+ghastoolkit = { version = "^0.8", features = ["toolcache"] }
 
 # GitHub API
 octocrab = "^0.44"
 openssl = { version = "0.10", features = ["vendored"] }
-

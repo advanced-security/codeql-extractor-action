@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
-use ghactions::{ActionTrait, ToolCache, group, groupend};
+use ghactions::{ActionTrait, group, groupend};
 use ghastoolkit::codeql::database::queries::CodeQLQueries;
 use ghastoolkit::{CodeQL, CodeQLDatabase};
 use log::{debug, info};
@@ -18,10 +18,23 @@ async fn main() -> Result<()> {
 
     group!("Setting up Extractor");
 
-    let client = octocrab::instance();
+    let client = action.octocrab()?;
 
-    let toolcache = ToolCache::new();
-    debug!("ToolCache :: {:?}", toolcache);
+    let mut codeql = CodeQL::init()
+        .build()
+        .await
+        .context("Failed to create CodeQL instance")?;
+
+    if !codeql.is_installed().await {
+        let codeql_version = action.codeql_version();
+        log::info!("CodeQL not installed, installing {}...", codeql_version);
+        codeql.install(&client, codeql_version).await?;
+        log::info!("CodeQL installed");
+    } else {
+        log::info!("CodeQL already installed");
+    }
+
+    log::info!("CodeQL :: {:?}", codeql);
 
     // Extractor
     let extractor_repo = action.extractor_repository()?;
@@ -44,12 +57,7 @@ async fn main() -> Result<()> {
     .context("Failed to fetch extractor")?;
     log::info!("Extractor :: {:?}", extractor);
 
-    let codeql = CodeQL::init()
-        .search_path(extractor)
-        .build()
-        .await
-        .context("Failed to create CodeQL instance")?;
-    log::info!("CodeQL :: {:?}", codeql);
+    codeql.append_search_path(extractor.display().to_string());
 
     let languages = codeql.get_languages().await?;
     log::info!("Languages :: {:#?}", languages);
