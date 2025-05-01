@@ -1,6 +1,6 @@
 .env
+run.sh
 target/
 extractors/
 db-*/
 .codeql/
-

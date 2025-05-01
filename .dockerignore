@@ -2,4 +2,4 @@ Dockerfile
 .env
 target/
 examples/
-
+.codeql/
