@@ -269,6 +269,7 @@ dependencies = [
  "dotenvy",
  "env_logger",
  "ghactions",
+ "ghactions-core",
  "ghastoolkit",
  "log",
  "octocrab",

@@ -15,6 +15,8 @@ inputs:
   language:
     description: Language(s) to use
     required: true
+  packs:
+    description: Query Packs to use
   codeql_version:
     description: CodeQL Version
     default: latest

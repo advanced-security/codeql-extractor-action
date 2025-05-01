@@ -16,9 +16,9 @@ async fn main() -> Result<()> {
     let action = Action::init()?;
     debug!("Action :: {:?}", action);
 
-    group!("Setting up Extractor");
-
     let client = action.octocrab()?;
+
+    group!("Setting up CodeQL");
 
     let mut codeql = CodeQL::init()
         .build()
@@ -27,18 +27,25 @@ async fn main() -> Result<()> {
 
     if !codeql.is_installed().await {
         let codeql_version = action.codeql_version();
-        log::info!("CodeQL not installed, installing {}...", codeql_version);
-        codeql.install(&client, codeql_version).await?;
+        log::info!("CodeQL not installed, installing `{}`...", codeql_version);
+        codeql
+            .install(&client, codeql_version)
+            .await
+            .context("Failed to install CodeQL")?;
         log::info!("CodeQL installed");
     } else {
         log::info!("CodeQL already installed");
     }
+    // Packs installation
+    action.install_packs(&codeql).await?;
 
-    log::info!("CodeQL :: {:?}", codeql);
+    groupend!();
+    group!("Setting up Extractor");
 
     // Extractor
-    let extractor_repo = action.extractor_repository()?;
-    info!("Extractor Repository :: {}", extractor_repo);
+    let extractor_repo = action
+        .extractor_repository()
+        .context("Failed to get extractor repository")?;
 
     let extractor_path = PathBuf::from("./extractors");
     if !extractor_path.exists() {
@@ -57,9 +64,12 @@ async fn main() -> Result<()> {
     .context("Failed to fetch extractor")?;
     log::info!("Extractor :: {:?}", extractor);
 
-    codeql.append_search_path(extractor.display().to_string());
+    codeql.append_search_path(extractor);
 
-    let languages = codeql.get_languages().await?;
+    let languages = codeql
+        .get_languages()
+        .await
+        .context("Failed to get languages")?;
     log::info!("Languages :: {:#?}", languages);
 
     if !action.languages().is_empty() {
@@ -73,12 +83,14 @@ async fn main() -> Result<()> {
         log::info!("No languages provided, using all available languages");
     }
 
+    log::info!("CodeQL :: {:?}", codeql);
+
     groupend!();
 
     let databases = PathBuf::from("./.codeql");
     let sarif_output = databases.join("results");
 
-    std::fs::create_dir_all(&sarif_output)?;
+    std::fs::create_dir_all(&sarif_output).context("Failed to create results directory")?;
 
     for language in action.languages() {
         let group = format!("Running {} extractor", language.language());
@@ -94,29 +106,45 @@ async fn main() -> Result<()> {
             .source(".".to_string())
             .path(database_path.display().to_string())
             .language(language.language())
-            .build()?;
+            .build()
+            .context("Failed to create database")?;
 
         log::info!("Creating database...");
-        codeql.database(&database).overwrite().create().await?;
+        codeql
+            .database(&database)
+            .overwrite()
+            .create()
+            .await
+            .context("Failed to create database")?;
         log::info!("Created database :: {:?}", database);
 
+        // TODO: Queries
         let queries = CodeQLQueries::from(format!(
             "{}/{}-queries",
             extractor_repo.owner.clone(),
             language.language()
         ));
-        log::debug!("Queries :: {:?}", queries);
+        log::info!("Queries :: {:?}", queries);
 
         log::info!("Running analysis...");
-        if let Err(err) = codeql
+        match codeql
             .database(&database)
             .queries(queries)
             .output(sarif_path)
             .analyze()
             .await
         {
-            log::error!("Failed to analyze database: {:?}", err);
+            Ok(_) => {
+                log::info!("Analysis complete");
+            }
+            Err(ghastoolkit::GHASError::SerdeError(e)) => {
+                log::warn!("Failed to parse SARIF: {:?}", e);
+            }
+            Err(e) => {
+                log::error!("Failed to analyze database: {:?}", e);
+            }
         }
+
         log::info!("Analysis complete :: {:?}", database);
         groupend!();
     }

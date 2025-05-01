@@ -1,8 +1,8 @@
 #![allow(dead_code)]
-use anyhow::Result;
+use anyhow::{Context, Result};
 use ghactions::prelude::*;
 use ghactions_core::repository::reference::RepositoryReference as Repository;
-use ghastoolkit::codeql::CodeQLLanguage;
+use ghastoolkit::{CodeQL, codeql::CodeQLLanguage};
 
 /// This action is for 3rd party CodeQL extractors to be used in GitHub Actions
 #[derive(Actions, Debug, Clone, Default)]
@@ -35,6 +35,10 @@ pub struct Action {
     /// Language(d) to use
     #[input(description = "Language(s) to use", split = ",", required = true)]
     language: Vec<String>,
+
+    /// Queries packs to use
+    #[input(description = "Query Packs to use", split = ",")]
+    packs: Vec<String>,
 
     /// CodeQL Version
     #[input(description = "CodeQL Version", default = "latest")]
@@ -101,7 +105,24 @@ impl Action {
     }
 
     pub fn codeql_version(&self) -> &str {
+        if self.codeql_version.is_empty() {
+            log::debug!("No CodeQL version provided, using the latest version");
+            return "latest";
+        }
         &self.codeql_version
+    }
+
+    pub async fn install_packs(&self, codeql: &CodeQL) -> Result<()> {
+        log::info!("Installing CodeQL Packs");
+        for pack in &self.packs {
+            log::info!("Installing pack `{}`", pack);
+
+            codeql
+                .run(vec!["pack", "download", pack])
+                .await
+                .context(format!("Failed to download pack `{}`", pack))?;
+        }
+        Ok(())
     }
 
     pub fn attestation(&self) -> bool {
