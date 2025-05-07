@@ -1,12 +1,12 @@
 name: "Test Self Action"
 
 on:
-  push:
-    branches: [ main ]
+  # push:
+  #   branches: [ main ]
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  EXTRACTOR_REPOSITORY: advanced-security/codeql-extractor-iac
 
 jobs:
   action-test:
@@ -27,5 +27,7 @@ jobs:
         uses: ./
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          extractor: ${{ env.EXTRACTOR_REPOSITORY }}
-
+          # IAC Extractor
+          extractor: advanced-security/codeql-extractor-iac@v0.4.1
+          language: iac
+          packs: advanced-security/iac-queries
