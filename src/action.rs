@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+use std::path::PathBuf;
+
 use anyhow::{Context, Result};
 use ghactions::prelude::*;
 use ghactions_core::repository::reference::RepositoryReference as Repository;
@@ -41,8 +43,20 @@ pub struct Action {
     packs: Vec<String>,
 
     /// CodeQL Version
-    #[input(description = "CodeQL Version", default = "latest")]
+    #[input(
+        description = "CodeQL Version",
+        rename = "codeql-version",
+        default = "latest"
+    )]
     codeql_version: String,
+
+    /// Working Directory (defualt: `./`)
+    #[input(
+        description = "Working Directory",
+        rename = "working-directory",
+        default = "./"
+    )]
+    working_directory: String,
 
     /// Attestation
     #[input(description = "Attestation", default = "false")]
@@ -51,12 +65,27 @@ pub struct Action {
     /// Version of the extractor to use
     #[output(description = "Version of the extractor to use")]
     version: String,
+
     /// Path to the extractor
     #[output(description = "Path to the extractor")]
     extractor_path: String,
 }
 
 impl Action {
+    pub fn working_directory(&self) -> Result<PathBuf> {
+        if self.working_directory.is_empty() {
+            log::debug!("No working directory provided, using the current directory");
+            return std::env::current_dir().context("Failed to get current directory");
+        }
+        log::debug!("Using the provided working directory");
+        Ok(std::path::PathBuf::from(&self.working_directory)
+            .canonicalize()
+            .context(format!(
+                "Failed to get working directory `{}`",
+                self.working_directory
+            ))?)
+    }
+
     /// Gets the repository to use for the extractor. If the repository is not provided,
     /// it will use the repository that the action is running in.
     pub fn extractor_repository(&self) -> Result<Repository> {

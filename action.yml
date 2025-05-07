@@ -17,9 +17,11 @@ inputs:
     required: true
   packs:
     description: Query Packs to use
-  codeql_version:
+  codeql-version:
     description: CodeQL Version
     default: latest
+  working-directory:
+    description: Working Directory
   attestation:
     description: Attestation
     default: 'false'

@@ -79,18 +79,15 @@ pub async fn fetch_extractor(
         log::info!("No attestation requested");
     }
 
-    if extractor_pack.exists() {
-        log::info!("Removing existing asset {:?}", extractor_pack);
-        std::fs::remove_dir_all(&extractor_pack)?;
-    }
+    if !extractor_pack.exists() {
+        log::info!("Extracting asset to {:?}", extractor_path);
+        toolcache
+            .extract_archive(&extractor_tarball, &output)
+            .await?;
 
-    log::info!("Extracting asset to {:?}", extractor_path);
-    toolcache
-        .extract_archive(&extractor_tarball, &output)
-        .await?;
-
-    if !extractor_path.exists() {
-        return Err(anyhow::anyhow!("Extractor not found"));
+        if !extractor_path.exists() {
+            return Err(anyhow::anyhow!("Extractor not found"));
+        }
     }
 
     Ok(extractor_pack.canonicalize()?)

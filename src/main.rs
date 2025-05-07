@@ -87,23 +87,32 @@ async fn main() -> Result<()> {
 
     groupend!();
 
-    let databases = PathBuf::from("./.codeql");
+    let cwd = action
+        .working_directory()
+        .context("Failed to get working directory")?;
+    let databases = cwd.join(".codeql");
     let sarif_output = databases.join("results");
 
     std::fs::create_dir_all(&sarif_output).context("Failed to create results directory")?;
 
     for language in action.languages() {
-        let group = format!("Running {} extractor", language.language());
-        group!(group);
+        group!(format!("Running {} extractor", language.language()));
 
         log::info!("Running extractor for language :: {}", language);
 
         let database_path = databases.join(format!("db-{}", language));
+        log::info!("Database Path :: {:?}", database_path);
+        if database_path.exists() {
+            std::fs::remove_dir_all(&database_path).with_context(|| {
+                format!("Failed to remove database directory {:?}", database_path)
+            })?;
+        }
+
         let sarif_path = sarif_output.join(format!("{}-results.sarif", language.language()));
 
-        let database = CodeQLDatabase::init()
+        let mut database = CodeQLDatabase::init()
             .name(action.get_repository_name()?)
-            .source(".".to_string())
+            .source(cwd.display().to_string())
             .path(database_path.display().to_string())
             .language(language.language())
             .build()
@@ -116,7 +125,7 @@ async fn main() -> Result<()> {
             .create()
             .await
             .context("Failed to create database")?;
-        log::info!("Created database :: {:?}", database);
+        log::debug!("Created database :: {:?}", database);
 
         // TODO: Queries
         let queries = CodeQLQueries::from(format!(
@@ -126,7 +135,8 @@ async fn main() -> Result<()> {
         ));
         log::info!("Queries :: {:?}", queries);
 
-        log::info!("Running analysis...");
+        groupend!();
+        group!(format!("Running {} analysis", language.language()));
         match codeql
             .database(&database)
             .queries(queries)
@@ -144,6 +154,10 @@ async fn main() -> Result<()> {
                 log::error!("Failed to analyze database: {:?}", e);
             }
         }
+
+        // Reload the database to get analysis info
+        database.reload()?;
+        log::info!("CodeQL Database LoC :: {}", database.lines_of_code());
 
         log::info!("Analysis complete :: {:?}", database);
         groupend!();
