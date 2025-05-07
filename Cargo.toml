@@ -20,7 +20,7 @@ anyhow = "1"
 thiserror = "2"
 dotenvy = "0.15"
 # Actions
-ghactions = { version = "^0.16", features = ["dotenvy", "log", "generate", "octocrab", "toolcache"] }
+ghactions = { version = "^0.16", features = ["dotenvy", "log", "generate", "octocrab", "toolcache-zip"] }
 ghactions-core = { version = "^0.16" }
 
 ghastoolkit = { version = "^0.8", features = ["toolcache"] }
