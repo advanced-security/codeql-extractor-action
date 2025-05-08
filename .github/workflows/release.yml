@@ -27,11 +27,16 @@ jobs:
         run: |
           set -e
 
-          if [[ -f .release.yml ]]; then
-            pip install yq
-            current_version=$(yq -r ".version" .release.yml)
-            echo "Current Version :: $current_version"  
+          set -e
 
+          if [[ -f .release.yml ]]; then
+            pip install yq > /dev/null
+            current_version=$(yq -r ".version" .release.yml)
+            echo "💻 Current Version :: $current_version"  
+            echo "version=$current_version" >> $GITHUB_OUTPUT
+          elif [[ -f Cargo.toml ]]; then
+            current_version=$(grep "version =" Cargo.toml | cut -d '"' -f 2)
+            echo "💻 Current Version :: $current_version"
             echo "version=$current_version" >> $GITHUB_OUTPUT
           else
             echo "Failed to find version..."
@@ -40,19 +45,20 @@ jobs:
 
           released_version=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/:owner/:repo/releases/latest | jq -r ".tag_name")
 
-          if [[ "$current_version" == "NA" || "$current_version" == "$released_version" ]]; then
-            echo "No new release found"
-            echo "release=false" >> "$GITHUB_OUTPUT"
+          echo "🦀 GitHub Release Version :: $released_version"
+
+          if [ "$current_version" != "$released_version" ]; then
+            echo "🚀 The crate is outdated... Let's update it!"
+            echo "outdated=true" >> $GITHUB_OUTPUT
           else
-            echo "New release found"
-            echo "version=$current_version" >> "$GITHUB_OUTPUT"
-            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "🍹 Crate is up to date. Lets sit back and relax..."
+            echo "outdated=false" >> $GITHUB_OUTPUT
           fi
 
   publish-image:
     uses: advanced-security/reusable-workflows/.github/workflows/container-publish.yml@main
     needs: [ set-version ]
-    if: ${{ needs.set-version.outputs.release == 'true' }}
+    if: ${{ needs.set-version.outputs.outdated == 'true' }}
     secrets: inherit
     permissions:
       contents: write
@@ -66,6 +72,7 @@ jobs:
   
   github-release:
     uses: advanced-security/reusable-workflows/.github/workflows/release.yml@main
+    if: ${{ needs.set-version.outputs.outdated == 'true' }}
     needs: [ publish-image ]
     secrets: inherit
     permissions:
