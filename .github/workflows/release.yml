@@ -14,7 +14,8 @@ jobs:
     outputs:
       release: ${{ steps.set-version.outputs.release }}
       version: ${{ steps.set-version.outputs.version }}
-
+    permissions:
+      contents: read
     steps:
       - name: "Checkout"
         uses: actions/checkout@v4
@@ -67,6 +68,9 @@ jobs:
     uses: advanced-security/reusable-workflows/.github/workflows/release.yml@main
     needs: [ publish-image ]
     secrets: inherit
+    permissions:
+      contents: write
+      packages: write
     with:
       version: ${{ needs.set-version.outputs.version }}
 
