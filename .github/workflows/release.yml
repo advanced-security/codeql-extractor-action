@@ -78,6 +78,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      pull-requests: write
     with:
       version: ${{ needs.set-version.outputs.version }}
 
