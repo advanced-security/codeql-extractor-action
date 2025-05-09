@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use ghactions_core::repository::reference::RepositoryReference as Repository;
 use octocrab::models::repos::{Asset, Release};
 
@@ -34,14 +34,16 @@ pub async fn fetch_extractor(
     attest: bool,
     output: &PathBuf,
 ) -> Result<PathBuf> {
-    let extractor_tarball = output.join("extractor.tar.gz");
-    let extractor_pack = output.join("extractor-pack");
-    let extractor_path = extractor_pack.join("codeql-extractor.yml");
+    let extractor_tarball = output.join(format!("{}.tar.gz", &repository.name));
+    log::debug!("Extractor Tarball :: {extractor_tarball:?}");
+    let extractor_pack = output.join(&repository.name);
+
+    log::info!("Extractor Path :: {extractor_pack:?}");
 
     let toolcache = ghactions::ToolCache::new();
 
     if !extractor_tarball.exists() {
-        log::info!("Downloading asset to {:?}", extractor_tarball);
+        log::info!("Downloading asset to {extractor_tarball:?}");
 
         let release = fetch_releases(client, repository).await?;
 
@@ -53,11 +55,15 @@ pub async fn fetch_extractor(
 
         let asset: Asset = client.get(release_asset.url.clone(), None::<&()>).await?;
 
-        toolcache.download_asset(&asset, &extractor_tarball).await?;
+        toolcache
+            .download_asset(&asset, &extractor_tarball)
+            .await
+            .context(format!("Extractor Archive: {extractor_tarball:?}"))
+            .context("Failed to download extractor")?;
     }
 
     if attest {
-        log::info!("Attesting asset {:?}", extractor_tarball);
+        log::info!("Attesting asset {extractor_tarball:?}");
 
         let output = tokio::process::Command::new("gh")
             .arg("attestation")
@@ -80,15 +86,31 @@ pub async fn fetch_extractor(
     }
 
     if !extractor_pack.exists() {
-        log::info!("Extracting asset to {:?}", extractor_path);
-        toolcache
-            .extract_archive(&extractor_tarball, &output)
-            .await?;
+        log::info!("Extracting asset to {extractor_pack:?}");
 
-        if !extractor_path.exists() {
-            return Err(anyhow::anyhow!("Extractor not found"));
-        }
+        toolcache
+            .extract_archive(&extractor_tarball, &extractor_pack)
+            .await
+            .context(format!("Extractor Archive: {extractor_tarball:?}"))
+            .context("Failed to extract extractor")?;
     }
 
-    Ok(extractor_pack.canonicalize()?)
+    // Find `codeql-extractor.yml` in the extracted directory using glob
+    for glob in glob::glob(
+        &extractor_pack
+            .join("**/codeql-extractor.yml")
+            .to_string_lossy(),
+    )? {
+        match glob {
+            Ok(path) => {
+                log::debug!("Extractor Path :: {path:?}");
+                return Ok(path.parent().unwrap().to_path_buf().canonicalize()?);
+            }
+            Err(e) => {
+                log::error!("Failed to find extractor: {e}");
+                return Err(anyhow::anyhow!("Failed to find extractor: {e}"));
+            }
+        }
+    }
+    Ok(extractor_pack)
 }

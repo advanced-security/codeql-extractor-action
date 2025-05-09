@@ -9,14 +9,16 @@ branding:
 inputs:
   token:
     description: GitHub Token
-  extractor:
-    description: GitHub Repository where the extractor is located
+  extractors:
+    description: GitHub Repository where the extractor(s) is located
     required: true
-  language:
+  languages:
     description: Language(s) to use
     required: true
   packs:
-    description: Query Packs to use
+    description: Query Pack(s) to use
+  allow-empty-database:
+    description: Allow empty database
   codeql-version:
     description: CodeQL Version
     default: latest
@@ -26,6 +28,8 @@ inputs:
     description: Attestation
     default: 'false'
 outputs:
+  sarif_results:
+    description: SARIF Results Directory
   version:
     description: Version of the extractor to use
   extractor_path:

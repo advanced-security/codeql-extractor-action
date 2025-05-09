@@ -2,8 +2,9 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use ghactions::{ActionTrait, group, groupend};
+use ghactions_core::RepositoryReference;
 use ghastoolkit::codeql::database::queries::CodeQLQueries;
-use ghastoolkit::{CodeQL, CodeQLDatabase};
+use ghastoolkit::{CodeQL, CodeQLDatabase, CodeQLExtractor};
 use log::{debug, info};
 
 mod action;
@@ -11,10 +12,15 @@ mod extractors;
 
 use action::Action;
 
+use self::action::{AUTHORS, BANNER, VERSION};
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    let action = Action::init()?;
-    debug!("Action :: {:?}", action);
+    let mut action = Action::init()?;
+
+    info!("{BANNER} - v{VERSION} by {AUTHORS}\n");
+
+    debug!("Action :: {action:?}");
 
     let client = action.octocrab()?;
 
@@ -27,7 +33,7 @@ async fn main() -> Result<()> {
 
     if !codeql.is_installed().await {
         let codeql_version = action.codeql_version();
-        log::info!("CodeQL not installed, installing `{}`...", codeql_version);
+        log::info!("CodeQL not installed, installing `{codeql_version}`...");
         codeql
             .install(&client, codeql_version)
             .await
@@ -43,7 +49,7 @@ async fn main() -> Result<()> {
     group!("Setting up Extractor");
 
     // Extractor
-    let extractor_repo = action
+    let extractor_repos = action
         .extractor_repository()
         .context("Failed to get extractor repository")?;
 
@@ -54,23 +60,33 @@ async fn main() -> Result<()> {
         info!("Created Extractor Directory :: {:?}", extractor_path);
     }
 
-    let extractor = extractors::fetch_extractor(
-        &client,
-        &extractor_repo,
-        action.attestation(),
-        &extractor_path,
-    )
-    .await
-    .context("Failed to fetch extractor")?;
-    log::info!("Extractor :: {:?}", extractor);
+    let mut extractors: Vec<(CodeQLExtractor, RepositoryReference)> = Vec::new();
 
-    codeql.append_search_path(extractor);
+    for extractor_repo in extractor_repos.iter() {
+        let extractor_path = extractors::fetch_extractor(
+            &client,
+            extractor_repo,
+            action.attestation(),
+            &extractor_path,
+        )
+        .await
+        .context("Failed to fetch extractor")?;
+        log::info!("Extractor :: {extractor_path:?}");
+
+        codeql.append_search_path(&extractor_path);
+
+        log::info!("Extractor Path :: {extractor_path:?}");
+        let extractor =
+            CodeQLExtractor::load_path(extractor_path).context("Failed to load extractor")?;
+
+        extractors.push((extractor, extractor_repo.clone()));
+    }
 
     let languages = codeql
         .get_languages()
         .await
         .context("Failed to get languages")?;
-    log::info!("Languages :: {:#?}", languages);
+    log::info!("Languages :: {languages:#?}");
 
     if !action.languages().is_empty() {
         log::info!("Validating language(s) :: {:?}", action.languages());
@@ -83,7 +99,7 @@ async fn main() -> Result<()> {
         log::info!("No languages provided, using all available languages");
     }
 
-    log::info!("CodeQL :: {:?}", codeql);
+    log::info!("CodeQL :: {codeql:?}");
 
     groupend!();
 
@@ -95,48 +111,56 @@ async fn main() -> Result<()> {
 
     std::fs::create_dir_all(&sarif_output).context("Failed to create results directory")?;
 
-    for language in action.languages() {
-        group!(format!("Running {} extractor", language.language()));
+    for (extractor, reporef) in extractors {
+        // The language is the name of the extractor
+        let language = extractor.name.to_string();
 
-        log::info!("Running extractor for language :: {}", language);
+        group!(format!("Running {} extractor", language));
 
-        let database_path = databases.join(format!("db-{}", language));
-        log::info!("Database Path :: {:?}", database_path);
+        log::info!("Running extractor for language :: {language}");
+
+        let database_path = databases.join(format!("db-{language}"));
+        log::info!("Database Path :: {database_path:?}");
         if database_path.exists() {
             std::fs::remove_dir_all(&database_path).with_context(|| {
-                format!("Failed to remove database directory {:?}", database_path)
+                format!("Failed to remove database directory {database_path:?}")
             })?;
         }
 
-        let sarif_path = sarif_output.join(format!("{}-results.sarif", language.language()));
+        let sarif_path = sarif_output.join(format!("{language}-results.sarif"));
 
         let mut database = CodeQLDatabase::init()
             .name(action.get_repository_name()?)
             .source(cwd.display().to_string())
             .path(database_path.display().to_string())
-            .language(language.language())
+            .language(language.to_string())
             .build()
             .context("Failed to create database")?;
 
         log::info!("Creating database...");
-        codeql
-            .database(&database)
-            .overwrite()
-            .create()
-            .await
-            .context("Failed to create database")?;
-        log::debug!("Created database :: {:?}", database);
+        match codeql.database(&database).overwrite().create().await {
+            Ok(_) => {
+                log::debug!("Created database :: {database:?}");
+            }
+            Err(e) => {
+                log::error!("Failed to create database: {e:?}");
+                if action.allow_empty_database() {
+                    log::warn!("Allowing empty database");
+                    continue;
+                } else {
+                    return Err(anyhow::anyhow!("Failed to create database: {e:?}"));
+                }
+            }
+        }
 
         // TODO: Queries
-        let queries = CodeQLQueries::from(format!(
-            "{}/{}-queries",
-            extractor_repo.owner.clone(),
-            language.language()
-        ));
-        log::info!("Queries :: {:?}", queries);
+        let queries = CodeQLQueries::from(format!("{}/{language}-queries", reporef.owner.clone()));
+        log::info!("Queries :: {queries:?}");
 
         groupend!();
-        group!(format!("Running {} analysis", language.language()));
+
+        group!(format!("Running {language} analysis"));
+
         match codeql
             .database(&database)
             .queries(queries)
@@ -148,10 +172,10 @@ async fn main() -> Result<()> {
                 log::info!("Analysis complete");
             }
             Err(ghastoolkit::GHASError::SerdeError(e)) => {
-                log::warn!("Failed to parse SARIF: {:?}", e);
+                log::warn!("Failed to parse SARIF: {e:?}");
             }
             Err(e) => {
-                log::error!("Failed to analyze database: {:?}", e);
+                log::error!("Failed to analyze database: {e:?}");
             }
         }
 
@@ -159,9 +183,11 @@ async fn main() -> Result<()> {
         database.reload()?;
         log::info!("CodeQL Database LoC :: {}", database.lines_of_code());
 
-        log::info!("Analysis complete :: {:?}", database);
+        log::info!("Analysis complete :: {database:?}");
         groupend!();
     }
+
+    action.set_sarif_results(sarif_output.display().to_string());
 
     log::info!("All databases created and analyzed");
 

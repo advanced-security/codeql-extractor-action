@@ -6,6 +6,14 @@ use ghactions::prelude::*;
 use ghactions_core::repository::reference::RepositoryReference as Repository;
 use ghastoolkit::{CodeQL, codeql::CodeQLLanguage};
 
+pub const BANNER: &str = r#"   ___          _        ____  __    __      _     _        _   
+  / __\___   __| | ___  /___ \/ /   /__\_  _| |_  /_\   ___| |_ 
+ / /  / _ \ / _` |/ _ \//  / / /   /_\ \ \/ / __|//_\\ / __| __|
+/ /__| (_) | (_| |  __/ \_/ / /___//__  >  <| |_/  _  \ (__| |_ 
+\____/\___/ \__,_|\___\___,_\____/\__/ /_/\_\\__\_/ \_/\___|\__|"#;
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
+
 /// This action is for 3rd party CodeQL extractors to be used in GitHub Actions
 #[derive(Actions, Debug, Clone, Default)]
 #[action(
@@ -29,18 +37,28 @@ pub struct Action {
 
     /// GitHub Repository where the extractor is located
     #[input(
-        description = "GitHub Repository where the extractor is located",
+        description = "GitHub Repository where the extractor(s) is located",
+        split = ",",
         required = true
     )]
-    extractor: String,
+    extractors: Vec<String>,
 
     /// Language(d) to use
     #[input(description = "Language(s) to use", split = ",", required = true)]
-    language: Vec<String>,
+    languages: Vec<String>,
 
     /// Queries packs to use
-    #[input(description = "Query Packs to use", split = ",")]
+    #[input(description = "Query Pack(s) to use", split = ",")]
     packs: Vec<String>,
+
+    /// Allow empty database. This allows for an extractor to error out if no database was
+    /// created dur to no source code being found for that language.
+    #[input(
+        description = "Allow empty database",
+        default = false,
+        rename = "allow-empty-database"
+    )]
+    allow_empty_database: bool,
 
     /// CodeQL Version
     #[input(
@@ -62,6 +80,10 @@ pub struct Action {
     #[input(description = "Attestation", default = "false")]
     attestation: bool,
 
+    /// SARIF Results Directory
+    #[output(description = "SARIF Results Directory", rename = "sarif-results")]
+    sarif_results: String,
+
     /// Version of the extractor to use
     #[output(description = "Version of the extractor to use")]
     version: String,
@@ -78,31 +100,37 @@ impl Action {
             return std::env::current_dir().context("Failed to get current directory");
         }
         log::debug!("Using the provided working directory");
-        Ok(std::path::PathBuf::from(&self.working_directory)
+        std::path::PathBuf::from(&self.working_directory)
             .canonicalize()
             .context(format!(
                 "Failed to get working directory `{}`",
                 self.working_directory
-            ))?)
+            ))
     }
 
     /// Gets the repository to use for the extractor. If the repository is not provided,
     /// it will use the repository that the action is running in.
-    pub fn extractor_repository(&self) -> Result<Repository> {
-        let repo = if self.extractor.is_empty() {
+    pub fn extractor_repository(&self) -> Result<Vec<Repository>> {
+        if self.extractors.is_empty() {
             log::debug!("No extractor repository provided, using the current repository");
-            self.get_repository()?
-        } else {
-            log::debug!("Using the provided extractor repository");
-            self.extractor.clone()
-        };
-        log::info!("Extractor Repository :: {}", repo);
+            return Ok(vec![Repository::parse(&self.get_repository()?)?]);
+        }
 
-        Ok(Repository::parse(&repo)?)
+        log::debug!("Using the provided extractor repository");
+
+        Ok(self
+            .extractors
+            .iter()
+            .filter_map(|ext| {
+                Repository::parse(ext)
+                    .context(format!("Failed to parse extractor repository `{ext}`"))
+                    .ok()
+            })
+            .collect::<Vec<Repository>>())
     }
 
     pub fn languages(&self) -> Vec<CodeQLLanguage> {
-        self.language
+        self.languages
             .iter()
             .map(|lang| CodeQLLanguage::from(lang.as_str()))
             .collect()
@@ -111,10 +139,10 @@ impl Action {
     pub fn validate_languages(&self, codeql_languages: &Vec<CodeQLLanguage>) -> Result<()> {
         for lang in self.languages() {
             let mut supported = false;
-            log::debug!("Validating language `{}`", lang);
+            log::debug!("Validating language `{lang}`");
             for codeql_lang in codeql_languages {
                 if lang.language().to_lowercase() == codeql_lang.language().to_lowercase() {
-                    log::debug!("Language `{}` is supported", lang);
+                    log::debug!("Language `{lang}` is supported");
                     supported = true;
                     break;
                 }
@@ -144,18 +172,22 @@ impl Action {
     pub async fn install_packs(&self, codeql: &CodeQL) -> Result<()> {
         log::info!("Installing CodeQL Packs");
         for pack in &self.packs {
-            log::info!("Installing pack `{}`", pack);
+            log::info!("Installing pack `{pack}`");
 
             codeql
                 .run(vec!["pack", "download", pack])
                 .await
-                .context(format!("Failed to download pack `{}`", pack))?;
+                .context(format!("Failed to download pack `{pack}`"))?;
         }
         Ok(())
     }
 
     pub fn attestation(&self) -> bool {
         self.attestation
+    }
+
+    pub fn allow_empty_database(&self) -> bool {
+        self.allow_empty_database
     }
 }
 
@@ -165,8 +197,8 @@ mod tests {
 
     fn action() -> Action {
         Action {
-            extractor: "owner/repo".to_string(),
-            language: vec!["iac".to_string()],
+            extractors: vec!["owner/repo".to_string()],
+            languages: vec!["iac".to_string()],
             ..Default::default()
         }
     }
