@@ -3,7 +3,7 @@
 <h1>CodeQL Extractor Action</h1>
 
 [![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)][github]
-[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/advanced-security/codeql-extractor-action/main.yml?style=for-the-badge)][github-actions]
+[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/advanced-security/codeql-extractor-action/build.yml?style=for-the-badge)][github-actions]
 [![GitHub Issues](https://img.shields.io/github/issues/advanced-security/codeql-extractor-action?style=for-the-badge)][github-issues]
 [![GitHub Stars](https://img.shields.io/github/stars/advanced-security/codeql-extractor-action?style=for-the-badge)][github]
 [![Licence](https://img.shields.io/github/license/Ileriayo/markdown-badges?style=for-the-badge)][license]
