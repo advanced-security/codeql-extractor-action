@@ -12,7 +12,7 @@ jobs:
   set-version:
     runs-on: ubuntu-latest
     outputs:
-      release: ${{ steps.set-version.outputs.release }}
+      outdated: ${{ steps.set-version.outputs.outdated }}
       version: ${{ steps.set-version.outputs.version }}
     permissions:
       contents: read
