@@ -32,6 +32,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           # IAC Extractor
-          extractor: advanced-security/codeql-extractor-iac@v0.4.1
-          language: iac
+          extractors: advanced-security/codeql-extractor-iac@v0.4.1
+          languages: iac
           packs: advanced-security/iac-queries
