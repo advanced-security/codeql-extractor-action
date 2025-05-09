@@ -2,6 +2,7 @@
 name = "codeql-extractor-action"
 description = "GitHub Action for CodeQL Extractors"
 version = "0.0.3"
+authors = ["GeekMasher"]
 
 license = "MIT"
 
@@ -19,8 +20,9 @@ tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 thiserror = "2"
 dotenvy = "0.15"
+glob = "0.3"
 # Actions
-ghactions = { version = "^0.16", features = ["dotenvy", "log", "generate", "octocrab", "toolcache-zip"] }
+ghactions = { version = "^0.16", features = ["dotenvy", "log", "generate", "octocrab", "toolcache-all"] }
 ghactions-core = { version = "^0.16" }
 
 ghastoolkit = { version = "^0.8", features = ["toolcache"] }
