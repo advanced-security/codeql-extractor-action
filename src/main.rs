@@ -56,8 +56,8 @@ async fn main() -> Result<()> {
     let extractor_path = PathBuf::from("./extractors");
     if !extractor_path.exists() {
         std::fs::create_dir(&extractor_path)
-            .with_context(|| format!("Failed to create directory {:?}", extractor_path))?;
-        info!("Created Extractor Directory :: {:?}", extractor_path);
+            .with_context(|| format!("Failed to create directory {extractor_path:?}"))?;
+        info!("Created Extractor Directory :: {extractor_path:?}");
     }
 
     let mut extractors: Vec<(CodeQLExtractor, RepositoryReference)> = Vec::new();

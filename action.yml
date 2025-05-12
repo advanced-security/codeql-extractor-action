@@ -9,6 +9,7 @@ branding:
 inputs:
   token:
     description: GitHub Token
+    default: ${{ secrets.GITHUB_TOKEN }}
   extractors:
     description: GitHub Repository where the extractor(s) is located
     required: true
