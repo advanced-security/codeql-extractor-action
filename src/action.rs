@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use ghactions::prelude::*;
 use ghactions_core::repository::reference::RepositoryReference as Repository;
-use ghastoolkit::{CodeQL, codeql::CodeQLLanguage};
+use ghastoolkit::{CodeQL, CodeQLPack, codeql::CodeQLLanguage};
 
 pub const BANNER: &str = r#"   ___          _        ____  __    __      _     _        _   
   / __\___   __| | ___  /___ \/ /   /__\_  _| |_  /_\   ___| |_ 
@@ -89,7 +89,7 @@ pub struct Action {
     version: String,
 
     /// Path to the extractor
-    #[output(description = "Path to the extractor")]
+    #[output(description = "Path to the extractor", rename = "extractor-path")]
     extractor_path: String,
 }
 
@@ -172,12 +172,22 @@ impl Action {
     pub async fn install_packs(&self, codeql: &CodeQL) -> Result<()> {
         log::info!("Installing CodeQL Packs");
         for pack in &self.packs {
-            log::info!("Installing pack `{pack}`");
+            log::debug!("Installing pack `{pack}`");
 
-            codeql
-                .run(vec!["pack", "download", pack])
-                .await
-                .context(format!("Failed to download pack `{pack}`"))?;
+            let qlpack = CodeQLPack::try_from(pack.clone())?;
+            log::info!("QLPack :: {qlpack:?}");
+
+            if pack.starts_with("./") {
+                qlpack
+                    .install(codeql)
+                    .await
+                    .context(format!("Failed to install pack `{pack}`"))?;
+            } else {
+                qlpack
+                    .download(codeql)
+                    .await
+                    .context(format!("Failed to download pack `{pack}`"))?;
+            }
         }
         Ok(())
     }

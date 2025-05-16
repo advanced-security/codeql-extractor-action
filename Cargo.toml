@@ -25,7 +25,7 @@ glob = "0.3"
 ghactions = { version = "^0.16", features = ["dotenvy", "log", "generate", "octocrab", "toolcache-all"] }
 ghactions-core = { version = "^0.16" }
 
-ghastoolkit = { version = "^0.9.1", features = ["toolcache"] }
+ghastoolkit = { version = "^0.10", features = ["toolcache"] }
 
 # GitHub API
 octocrab = "^0.44"

@@ -30,6 +30,7 @@ async fn main() -> Result<()> {
         .build()
         .await
         .context("Failed to create CodeQL instance")?;
+    log::debug!("CodeQL :: {codeql:?}");
 
     if !codeql.is_installed().await {
         let codeql_version = action.codeql_version();
