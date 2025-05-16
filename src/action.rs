@@ -32,7 +32,7 @@ pub const AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
 )]
 pub struct Action {
     /// GitHub Token
-    #[input(description = "GitHub Token", default = "${{ secrets.GITHUB_TOKEN }}")]
+    #[input(description = "GitHub Token", default = "${{ github.token }}")]
     token: String,
 
     /// GitHub Repository where the extractor is located
