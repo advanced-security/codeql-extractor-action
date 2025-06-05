@@ -4,15 +4,13 @@ use anyhow::{Context, Result};
 use ghactions::{ActionTrait, group, groupend};
 use ghactions_core::RepositoryReference;
 use ghastoolkit::codeql::database::queries::CodeQLQueries;
-use ghastoolkit::{CodeQL, CodeQLDatabase, CodeQLExtractor};
+use ghastoolkit::prelude::*;
 use log::{debug, info};
 
 mod action;
 mod extractors;
 
-use action::Action;
-
-use self::action::{AUTHORS, BANNER, VERSION};
+use action::{AUTHORS, Action, BANNER, VERSION};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -100,7 +98,7 @@ async fn main() -> Result<()> {
         log::info!("No languages provided, using all available languages");
     }
 
-    log::info!("CodeQL :: {codeql:?}");
+    log::info!("CodeQL :: {codeql:#?}");
 
     groupend!();
 

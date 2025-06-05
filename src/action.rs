@@ -175,19 +175,28 @@ impl Action {
             log::debug!("Installing pack `{pack}`");
 
             let qlpack = CodeQLPack::try_from(pack.clone())?;
-            log::info!("QLPack :: {qlpack:?}");
 
-            if pack.starts_with("./") {
-                qlpack
-                    .install(codeql)
-                    .await
-                    .context(format!("Failed to install pack `{pack}`"))?;
+            if !qlpack.is_installed().await {
+                log::info!(
+                    "QLPack `{}` is not installed, installing it now",
+                    qlpack.full_name()
+                );
+                if pack.starts_with("./") {
+                    qlpack
+                        .install(codeql)
+                        .await
+                        .context(format!("Failed to install pack `{pack}`"))?;
+                } else {
+                    codeql
+                        .pack(&qlpack)
+                        .download()
+                        .await
+                        .context(format!("Failed to download pack `{pack}`"))?;
+                }
             } else {
-                qlpack
-                    .download(codeql)
-                    .await
-                    .context(format!("Failed to download pack `{pack}`"))?;
+                log::info!("QLPack `{}` is already installed", qlpack.full_name());
             }
+            log::info!("QLPack :: {qlpack:#?}");
         }
         Ok(())
     }

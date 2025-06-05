@@ -704,9 +704,9 @@ dependencies = [
 
 [[package]]
 name = "ghastoolkit"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c73e8cb2a80cf429396975899f49b4f54eee9a58799077493f112612a72e706"
+checksum = "5d5ba7a9e9eb2f56c4cdcfa554745d4335a4940e455d88e4801d88be5509d917"
 dependencies = [
  "anyhow",
  "async-trait",
