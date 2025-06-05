@@ -31,10 +31,14 @@ async fn main() -> Result<()> {
     log::debug!("CodeQL :: {codeql:?}");
 
     if !codeql.is_installed().await {
+        // Use a client without a token to not use Action' token which will fail
+        // as the token won't have access to the CodeQL repository.
+        let octocrab = action.octocrab_without_token()?;
+
         let codeql_version = action.codeql_version();
         log::info!("CodeQL not installed, installing `{codeql_version}`...");
         codeql
-            .install(&client, codeql_version)
+            .install(&octocrab, codeql_version)
             .await
             .context("Failed to install CodeQL")?;
         log::info!("CodeQL installed");
@@ -153,7 +157,8 @@ async fn main() -> Result<()> {
         }
 
         // TODO: Queries
-        let queries = CodeQLQueries::from(format!("{}/{language}-queries", reporef.owner.clone()));
+        let queries = CodeQLQueries::parse(format!("{}/{language}-queries", reporef.owner.clone()))
+            .context("Failed to parse queries")?;
         log::info!("Queries :: {queries:?}");
 
         groupend!();

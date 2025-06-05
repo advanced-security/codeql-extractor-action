@@ -26,7 +26,6 @@ ghactions = { version = "^0.16", features = ["dotenvy", "log", "generate", "octo
 ghactions-core = { version = "^0.16" }
 
 ghastoolkit = { version = "^0.11", features = ["toolcache"] }
-# ghastoolkit = { path = "../ghastoolkit-rs/core/", features = ["toolcache"] }
 
 # GitHub API
 octocrab = "^0.44"
