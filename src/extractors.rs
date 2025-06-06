@@ -1,7 +1,7 @@
-use std::path::PathBuf;
+use std::{os::unix::fs::PermissionsExt, path::PathBuf};
 
 use anyhow::{Context, Result};
-use ghactions_core::repository::reference::RepositoryReference as Repository;
+use ghactions_core::{repository::reference::RepositoryReference as Repository, toolcache::tool};
 use octocrab::models::repos::{Asset, Release};
 
 async fn fetch_releases(client: &octocrab::Octocrab, repository: &Repository) -> Result<Release> {
@@ -104,7 +104,14 @@ pub async fn fetch_extractor(
         match glob {
             Ok(path) => {
                 log::debug!("Extractor Path :: {path:?}");
-                return Ok(path.parent().unwrap().to_path_buf().canonicalize()?);
+                let full_path = path.parent().unwrap().to_path_buf().canonicalize()?;
+                // Linux and Macos
+                #[cfg(unix)]
+                {
+                    update_tools_permisisons(&full_path)?;
+                }
+
+                return Ok(full_path);
             }
             Err(e) => {
                 log::error!("Failed to find extractor: {e}");
@@ -113,4 +120,44 @@ pub async fn fetch_extractor(
         }
     }
     Ok(extractor_pack)
+}
+
+/// Update the permissions for tool scripts (*.sh) and the extractor (extractor)
+fn update_tools_permisisons(path: &PathBuf) -> Result<()> {
+    let tools_path = path.join("tools");
+    log::info!("Tools :: {tools_path:?}");
+
+    if tools_path.exists() {
+        log::debug!("Found tools directory at {tools_path:?}");
+
+        // Linux
+        let linux_extractor = tools_path.join("linux64").join("extractor");
+        if linux_extractor.exists() {
+            set_permissions(&linux_extractor)?;
+        }
+        // Macos
+        let macos_extractor = tools_path.join("osx64").join("extractor");
+        if macos_extractor.exists() {
+            set_permissions(&macos_extractor)?;
+        }
+
+        for file in std::fs::read_dir(&tools_path)? {
+            let file = file?;
+            let path = file.path();
+
+            if path.is_file() && path.extension().map_or(false, |ext| ext == "sh") {
+                log::debug!("Setting executable permissions for {path:?}");
+                set_permissions(&path)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Sets the file permissions to be executable
+fn set_permissions(path: &PathBuf) -> Result<()> {
+    log::info!("Setting permissions for :: {:?}", path);
+    let perms = std::fs::Permissions::from_mode(0o555);
+    std::fs::set_permissions(&path, perms)?;
+    Ok(())
 }

@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use anyhow::{Context, Result};
 use ghactions::{ActionTrait, group, groupend};
 use ghactions_core::RepositoryReference;
@@ -21,6 +19,12 @@ async fn main() -> Result<()> {
     debug!("Action :: {action:?}");
 
     let client = action.octocrab()?;
+
+    let cwd = action
+        .working_directory()
+        .context("Failed to get working directory")?;
+    let databases = cwd.join(".codeql");
+    let sarif_output = databases.join("results");
 
     group!("Setting up CodeQL");
 
@@ -56,7 +60,7 @@ async fn main() -> Result<()> {
         .extractor_repository()
         .context("Failed to get extractor repository")?;
 
-    let extractor_path = PathBuf::from("./extractors");
+    let extractor_path = cwd.join(".codeql").join("extractors"); 
     if !extractor_path.exists() {
         std::fs::create_dir(&extractor_path)
             .with_context(|| format!("Failed to create directory {extractor_path:?}"))?;
@@ -105,12 +109,6 @@ async fn main() -> Result<()> {
     log::info!("CodeQL :: {codeql:#?}");
 
     groupend!();
-
-    let cwd = action
-        .working_directory()
-        .context("Failed to get working directory")?;
-    let databases = cwd.join(".codeql");
-    let sarif_output = databases.join("results");
 
     std::fs::create_dir_all(&sarif_output).context("Failed to create results directory")?;
 
