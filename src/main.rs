@@ -60,7 +60,7 @@ async fn main() -> Result<()> {
         .extractor_repository()
         .context("Failed to get extractor repository")?;
 
-    let extractor_path = cwd.join(".codeql").join("extractors"); 
+    let extractor_path = cwd.join(".codeql").join("extractors");
     if !extractor_path.exists() {
         std::fs::create_dir(&extractor_path)
             .with_context(|| format!("Failed to create directory {extractor_path:?}"))?;

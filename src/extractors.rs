@@ -1,8 +1,8 @@
 //! CodeQL Extractor Fetcher
-use std::{os::unix::fs::PermissionsExt, path::PathBuf};
 use anyhow::{Context, Result};
 use ghactions_core::repository::reference::RepositoryReference as Repository;
 use octocrab::models::repos::{Asset, Release};
+use std::{os::unix::fs::PermissionsExt, path::PathBuf};
 
 async fn fetch_releases(client: &octocrab::Octocrab, repository: &Repository) -> Result<Release> {
     let release = if let Some(rel) = &repository.reference {
@@ -49,7 +49,11 @@ pub async fn fetch_extractor(
 
         let release = fetch_releases(client, repository).await?;
 
-        let (release_asset, file_format) = match release.assets.iter().find(|a| a.name.ends_with(".tar.gz") || a.name.ends_with(".zip")) {
+        let (release_asset, file_format) = match release
+            .assets
+            .iter()
+            .find(|a| a.name.ends_with(".tar.gz") || a.name.ends_with(".zip"))
+        {
             Some(asset) if asset.name.ends_with(".tar.gz") => (asset, "tar"),
             Some(asset) if asset.name.ends_with(".zip") => (asset, "zip"),
             _ => {
@@ -60,8 +64,7 @@ pub async fn fetch_extractor(
 
         let asset: Asset = client.get(release_asset.url.clone(), None::<&()>).await?;
 
-
-        let extractor_archive =    if file_format == "tar" {
+        let extractor_archive = if file_format == "tar" {
             extractor_tarball.clone()
         } else {
             extractor_zip.clone()
