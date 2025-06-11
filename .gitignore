@@ -1,5 +1,6 @@
 .env
 run.sh
+/app.*
 target/
 extractors/
 db-*/

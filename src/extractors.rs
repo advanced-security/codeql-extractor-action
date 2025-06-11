@@ -1,7 +1,7 @@
+//! CodeQL Extractor Fetcher
 use std::{os::unix::fs::PermissionsExt, path::PathBuf};
-
 use anyhow::{Context, Result};
-use ghactions_core::{repository::reference::RepositoryReference as Repository, toolcache::tool};
+use ghactions_core::repository::reference::RepositoryReference as Repository;
 use octocrab::models::repos::{Asset, Release};
 
 async fn fetch_releases(client: &octocrab::Octocrab, repository: &Repository) -> Result<Release> {
@@ -35,6 +35,8 @@ pub async fn fetch_extractor(
     output: &PathBuf,
 ) -> Result<PathBuf> {
     let extractor_tarball = output.join(format!("{}.tar.gz", &repository.name));
+    let extractor_zip = output.join(format!("{}.zip", &repository.name));
+
     log::debug!("Extractor Tarball :: {extractor_tarball:?}");
     let extractor_pack = output.join(&repository.name);
 
@@ -42,25 +44,42 @@ pub async fn fetch_extractor(
 
     let toolcache = ghactions::ToolCache::new();
 
-    if !extractor_tarball.exists() {
+    let extractor_archive = if !extractor_tarball.exists() && !extractor_zip.exists() {
         log::info!("Downloading asset to {extractor_tarball:?}");
 
         let release = fetch_releases(client, repository).await?;
 
-        let Some(release_asset) = release.assets.iter().find(|a| a.name.ends_with(".tar.gz"))
-        else {
-            return Err(anyhow::anyhow!("No asset found"));
+        let (release_asset, file_format) = match release.assets.iter().find(|a| a.name.ends_with(".tar.gz") || a.name.ends_with(".zip")) {
+            Some(asset) if asset.name.ends_with(".tar.gz") => (asset, "tar"),
+            Some(asset) if asset.name.ends_with(".zip") => (asset, "zip"),
+            _ => {
+                return Err(anyhow::anyhow!("No suitable asset found for extractor"));
+            }
         };
         log::info!("Asset URL :: {}", release_asset.browser_download_url);
 
         let asset: Asset = client.get(release_asset.url.clone(), None::<&()>).await?;
 
+
+        let extractor_archive =    if file_format == "tar" {
+            extractor_tarball.clone()
+        } else {
+            extractor_zip.clone()
+        };
+
         toolcache
-            .download_asset(&asset, &extractor_tarball)
+            .download_asset(&asset, &extractor_archive)
             .await
             .context(format!("Extractor Archive: {extractor_tarball:?}"))
             .context("Failed to download extractor")?;
-    }
+        extractor_archive
+    } else {
+        if extractor_tarball.exists() {
+            extractor_tarball.clone()
+        } else {
+            extractor_zip.clone()
+        }
+    };
 
     if attest {
         log::info!("Attesting asset {extractor_tarball:?}");
@@ -85,11 +104,13 @@ pub async fn fetch_extractor(
         log::info!("No attestation requested");
     }
 
+    log::debug!("Extractor Archive :: {extractor_archive:?}");
+
     if !extractor_pack.exists() {
         log::info!("Extracting asset to {extractor_pack:?}");
 
         toolcache
-            .extract_archive(&extractor_tarball, &extractor_pack)
+            .extract_archive(&extractor_archive, &extractor_pack)
             .await
             .context(format!("Extractor Archive: {extractor_tarball:?}"))
             .context("Failed to extract extractor")?;
@@ -103,6 +124,7 @@ pub async fn fetch_extractor(
     )? {
         match glob {
             Ok(path) => {
+                // TODO: Load and check the extractor configuration
                 log::debug!("Extractor Path :: {path:?}");
                 let full_path = path.parent().unwrap().to_path_buf().canonicalize()?;
                 // Linux and Macos
