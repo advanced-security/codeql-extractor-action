@@ -150,7 +150,7 @@ impl Action {
         for path in paths {
             if !path.exists() {
                 log::debug!("Creating CodeQL directory at `{}`", path.display());
-                if std::fs::create_dir(&path).is_ok() {
+                if std::fs::create_dir_all(&path).is_ok() {
                     return Ok(path);
                 } else {
                     log::warn!("Failed to create CodeQL directory at `{}`", path.display());
