@@ -141,10 +141,8 @@ impl Action {
             // Local CodeQL directory in the working directory
             self.working_directory()?.join(".codeql"),
             // Runner temp directory
-            PathBuf::from(
-                std::env::var("RUNNER_TEMP")
-                    .unwrap_or_else(|_| "/tmp".to_string())
-            ).join(".codeql"),
+            PathBuf::from(std::env::var("RUNNER_TEMP").unwrap_or_else(|_| "/tmp".to_string()))
+                .join(".codeql"),
         ];
 
         for path in paths {
