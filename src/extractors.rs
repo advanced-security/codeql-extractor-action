@@ -6,12 +6,14 @@ use std::{os::unix::fs::PermissionsExt, path::PathBuf};
 
 async fn fetch_releases(client: &octocrab::Octocrab, repository: &Repository) -> Result<Release> {
     let release = if let Some(rel) = &repository.reference {
+        log::info!("Fetching release by tag: {}", rel);
         client
             .repos(repository.owner.clone(), repository.name.clone())
             .releases()
             .get_by_tag(&rel)
             .await?
     } else {
+        log::info!("Fetching latest release",);
         // Get Latest Release
         client
             .repos(repository.owner.clone(), repository.name.clone())
@@ -20,7 +22,7 @@ async fn fetch_releases(client: &octocrab::Octocrab, repository: &Repository) ->
             .await?
     };
 
-    log::debug!("Release :: {} - {:?}", release.tag_name, release.created_at);
+    log::info!("Release :: {} - {:?}", release.tag_name, release.created_at);
 
     Ok(release)
 }

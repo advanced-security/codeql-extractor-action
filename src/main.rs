@@ -18,7 +18,9 @@ async fn main() -> Result<()> {
 
     debug!("Action :: {action:?}");
 
-    let client = action.octocrab()?;
+    // Use a client without a token to not use Action' token which will fail
+    // as the token won't have access to the CodeQL repository.
+    let octocrab = action.octocrab_without_token()?;
 
     let cwd = action
         .working_directory()
@@ -37,10 +39,6 @@ async fn main() -> Result<()> {
     log::debug!("CodeQL :: {codeql:?}");
 
     if !codeql.is_installed().await {
-        // Use a client without a token to not use Action' token which will fail
-        // as the token won't have access to the CodeQL repository.
-        let octocrab = action.octocrab_without_token()?;
-
         let codeql_version = action.codeql_version();
         log::info!("CodeQL not installed, installing `{codeql_version}`...");
         codeql
@@ -62,9 +60,9 @@ async fn main() -> Result<()> {
         .extractor_repository()
         .context("Failed to get extractor repository")?;
 
-    let extractor_path = cwd.join(".codeql").join("extractors");
+    let extractor_path = codeql_dir.join("extractors");
     if !extractor_path.exists() {
-        std::fs::create_dir(&extractor_path)
+        std::fs::create_dir_all(&extractor_path)
             .with_context(|| format!("Failed to create directory {extractor_path:?}"))?;
         info!("Created Extractor Directory :: {extractor_path:?}");
     }
@@ -72,8 +70,14 @@ async fn main() -> Result<()> {
     let mut extractors: Vec<(CodeQLExtractor, RepositoryReference)> = Vec::new();
 
     for extractor_repo in extractor_repos.iter() {
+        log::info!(
+            "Fetching extractor from repository: {} / {}",
+            extractor_repo.owner,
+            extractor_repo.name
+        );
+
         let extractor_path = extractors::fetch_extractor(
-            &client,
+            &octocrab,
             extractor_repo,
             action.attestation(),
             &extractor_path,
