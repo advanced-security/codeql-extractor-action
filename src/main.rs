@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use ghactions::{ActionTrait, group, groupend};
 use ghactions_core::RepositoryReference;
-use ghastoolkit::codeql::database::queries::CodeQLQueries;
 use ghastoolkit::prelude::*;
+use ghastoolkit::{Sarif, codeql::database::queries::CodeQLQueries};
 use log::{debug, info};
 
 mod action;
@@ -172,7 +172,7 @@ async fn main() -> Result<()> {
         match codeql
             .database(&database)
             .queries(queries)
-            .output(sarif_path)
+            .output(sarif_path.clone())
             .analyze()
             .await
         {
@@ -185,6 +185,24 @@ async fn main() -> Result<()> {
             Err(e) => {
                 log::error!("Failed to analyze database: {e:?}");
             }
+        }
+
+        log::info!("Post-processing SARIF results");
+        if let Ok(sarif_content) = std::fs::read_to_string(&sarif_path) {
+            if let Ok(mut sarif) = serde_json::from_str::<Sarif>(&sarif_content) {
+                sarif.runs.iter_mut().for_each(|run| {
+                    run.tool.driver.name = format!("CodeQL - {language}");
+                });
+
+                log::debug!("Writing SARIF file to {sarif_path:?}");
+                if let Err(e) = std::fs::write(&sarif_path, serde_json::to_string(&sarif)?)
+                {
+                    log::error!("Failed to write SARIF file: {e}");
+                } else {
+                    log::info!("SARIF file written successfully: {sarif_path:?}");
+                }
+            }
+
         }
 
         // Reload the database to get analysis info

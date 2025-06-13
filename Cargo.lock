@@ -269,6 +269,7 @@ dependencies = [
  "log",
  "octocrab",
  "openssl",
+ "serde_json",
  "thiserror",
  "tokio",
 ]
