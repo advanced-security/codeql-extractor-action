@@ -136,6 +136,32 @@ impl Action {
             .collect()
     }
 
+    pub fn get_codeql_dir(&self) -> Result<PathBuf> {
+        let paths = vec![
+            // Local CodeQL directory in the working directory
+            self.working_directory()?.join(".codeql"),
+            // Runner temp directory
+            PathBuf::from(std::env::var("RUNNER_TEMP").unwrap_or_else(|_| "/tmp".to_string()))
+                .join(".codeql"),
+        ];
+
+        for path in paths {
+            if !path.exists() {
+                log::debug!("Creating CodeQL directory at `{}`", path.display());
+                if std::fs::create_dir_all(&path).is_ok() {
+                    return Ok(path);
+                } else {
+                    log::warn!("Failed to create CodeQL directory at `{}`", path.display());
+                }
+            } else {
+                log::debug!("CodeQL directory already exists at `{}`", path.display());
+                return Ok(path);
+            }
+        }
+
+        Err(anyhow::anyhow!("Failed to create CodeQL directory",))
+    }
+
     pub fn validate_languages(&self, codeql_languages: &Vec<CodeQLLanguage>) -> Result<()> {
         for lang in self.languages() {
             let mut supported = false;

@@ -23,8 +23,10 @@ async fn main() -> Result<()> {
     let cwd = action
         .working_directory()
         .context("Failed to get working directory")?;
-    let databases = cwd.join(".codeql");
-    let sarif_output = databases.join("results");
+    let codeql_dir = action.get_codeql_dir()?;
+
+    let databases = codeql_dir.join("databases");
+    let sarif_output = codeql_dir.join("results");
 
     group!("Setting up CodeQL");
 
