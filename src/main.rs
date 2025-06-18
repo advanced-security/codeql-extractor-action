@@ -188,8 +188,10 @@ async fn main() -> Result<()> {
         }
 
         log::info!("Post-processing SARIF results");
-        if let Ok(sarif_content) = std::fs::read_to_string(&sarif_path) {
-            if let Ok(mut sarif) = serde_json::from_str::<Sarif>(&sarif_content) {
+
+        match Sarif::try_from(sarif_path.clone()) {
+            Ok(mut sarif) => {
+                log::info!("Updating SARIF tool name for language: {language}");
                 sarif.runs.iter_mut().for_each(|run| {
                     run.tool.driver.name = format!("CodeQL - {language}");
                 });
@@ -201,11 +203,16 @@ async fn main() -> Result<()> {
                     log::info!("SARIF file written successfully: {sarif_path:?}");
                 }
             }
+            Err(e) => {
+                log::error!("Failed to read and parse SARIF file: {e}");
+            }
         }
 
         // Reload the database to get analysis info
         database.reload()?;
         log::info!("CodeQL Database LoC :: {}", database.lines_of_code());
+
+        log::info!("SARIF Output Path :: {sarif_path:?}");
 
         log::info!("Analysis complete :: {database:?}");
         groupend!();
