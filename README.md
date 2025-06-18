@@ -29,7 +29,7 @@ This action is designed to be used in conjunction with the [CodeQL][CodeQL] anal
 
 ```yml
 - name: "CodeQL Extractor Action"
-  uses: advanced-security/codeql-extractor-action@v0.0.15
+  uses: advanced-security/codeql-extractor-action@v0.0.16
   with:
     # Repository reference (e.g. "owner/repo", "owner/repo@ref")
     extractor: "advanced-security/codeql-extractor-iac"
@@ -50,8 +50,7 @@ A CodeQL extractor is a tool that extracts code from a repository and prepares i
 To create an extractor, you need to create a GitHub repository that contains the extractor releases as an artifact / assest in a GitHub release.
 The extractor should be a Tarball file that contains the compiled extractor and all other necessary files for the extractor to run.
 
-
-## Maintainers 
+## Maintainers
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
@@ -69,7 +68,7 @@ The extractor should be a Tarball file that contains the compiled extractor and 
 
 ## Support
 
-Please create [GitHub Issues][github-issues] if there are bugs or feature requests.
+Please create [GitHub Issues][github-issues] or [GitHub Discussion][github-discussions] if there are bugs or feature requests.
 
 This project uses [Sematic Versioning (v2)](https://semver.org/) and with major releases, breaking changes will occur.
 
@@ -78,7 +77,6 @@ This project uses [Sematic Versioning (v2)](https://semver.org/) and with major 
 This project is licensed under the terms of the MIT open source license.
 Please refer to [MIT][license] for the full terms.
 
-
 <!-- Resoucres -->
 
 [license]: ./LICENSE
@@ -86,5 +84,4 @@ Please refer to [MIT][license] for the full terms.
 [github-issues]: https://github.com/advanced-security/codeql-extractor-action/issues
 [github-actions]: https://github.com/advanced-security/codeql-extractor-action/actions
 [github-discussions]: https://github.com/advanced-security/codeql-extractor-action/discussions
-
 [CodeQL]: https://codeql.github.com/

@@ -28,6 +28,9 @@ If you have an idea for a new feature or enhancement, please open an issue on Gi
 3. Make your changes
 4. Write tests for your changes (if applicable)
 5. Run the tests to make sure everything is working
+6. Commit your changes with a clear commit message
+7. Push your changes to your fork
+8. Open a [pull request][pr] against the `main` branch of the original repository
 
 ### Required Tools
 
