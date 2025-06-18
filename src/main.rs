@@ -195,14 +195,12 @@ async fn main() -> Result<()> {
                 });
 
                 log::debug!("Writing SARIF file to {sarif_path:?}");
-                if let Err(e) = std::fs::write(&sarif_path, serde_json::to_string(&sarif)?)
-                {
+                if let Err(e) = std::fs::write(&sarif_path, serde_json::to_string(&sarif)?) {
                     log::error!("Failed to write SARIF file: {e}");
                 } else {
                     log::info!("SARIF file written successfully: {sarif_path:?}");
                 }
             }
-
         }
 
         // Reload the database to get analysis info
