@@ -149,6 +149,39 @@ pub async fn fetch_extractor(
     Ok(extractor_pack)
 }
 
+/// Update the SARIF file with the extractor information (CodeQL ${language})
+///
+///  Update only the `runs.0.tool.driver` section of the SARIF file
+pub fn update_sarif(path: &PathBuf, extractor: String) -> Result<()> {
+    let sarif_content =
+        std::fs::read_to_string(path).context(format!("Failed to read SARIF file: {:?}", path))?;
+    let mut sarif_json: serde_json::Value = serde_json::from_str(&sarif_content)
+        .context(format!("Failed to parse SARIF file: {:?}", path))?;
+
+    log::debug!("SARIF JSON :: {sarif_json:#?}");
+    if let Some(tool) = sarif_json
+        .get_mut("runs")
+        .and_then(|runs| runs.get_mut(0))
+        .and_then(|run| run.get_mut("tool"))
+    {
+        if let Some(driver) = tool.get_mut("driver") {
+            driver["name"] = serde_json::Value::String(format!("CodeQL - {}", extractor));
+            log::info!("Updated SARIF file with extractor: {extractor}");
+        } else {
+            log::warn!("No 'driver' field found in SARIF file");
+        }
+    } else {
+        log::warn!("No 'runs' or 'tool' field found in SARIF file");
+    }
+
+    let data = serde_json::to_string(&sarif_json)
+        .context(format!("Failed to serialize SARIF JSON: {:?}", path))?;
+    // Write the updated SARIF back to the file
+    std::fs::write(path, data)
+        .context(format!("Failed to write SARIF file: {:?}", path))?;
+    Ok(())
+}
+
 /// Update the permissions for tool scripts (*.sh) and the extractor (extractor)
 fn update_tools_permisisons(path: &PathBuf) -> Result<()> {
     let tools_path = path.join("tools");

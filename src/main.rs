@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use ghactions::{ActionTrait, group, groupend};
 use ghactions_core::RepositoryReference;
 use ghastoolkit::prelude::*;
-use ghastoolkit::{Sarif, codeql::database::queries::CodeQLQueries};
+use ghastoolkit::{codeql::database::queries::CodeQLQueries};
 use log::{debug, info};
 
 mod action;
@@ -189,24 +189,8 @@ async fn main() -> Result<()> {
 
         log::info!("Post-processing SARIF results");
 
-        match Sarif::try_from(sarif_path.clone()) {
-            Ok(mut sarif) => {
-                log::info!("Updating SARIF tool name for language: {language}");
-                sarif.runs.iter_mut().for_each(|run| {
-                    run.tool.driver.name = format!("CodeQL - {language}");
-                });
-
-                log::debug!("Writing SARIF file to {sarif_path:?}");
-                if let Err(e) = std::fs::write(&sarif_path, serde_json::to_string(&sarif)?) {
-                    log::error!("Failed to write SARIF file: {e}");
-                } else {
-                    log::info!("SARIF file written successfully: {sarif_path:?}");
-                }
-            }
-            Err(e) => {
-                log::error!("Failed to read and parse SARIF file: {e}");
-            }
-        }
+        extractors::update_sarif(&sarif_path, extractor.display_name.clone())
+            .context("Failed to update SARIF file with extractor information")?;
 
         // Reload the database to get analysis info
         database.reload()?;
