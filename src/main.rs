@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use ghactions::{ActionTrait, group, groupend};
 use ghactions_core::RepositoryReference;
+use ghastoolkit::codeql::database::queries::CodeQLQueries;
 use ghastoolkit::prelude::*;
-use ghastoolkit::{codeql::database::queries::CodeQLQueries};
 use log::{debug, info};
 
 mod action;

@@ -177,8 +177,7 @@ pub fn update_sarif(path: &PathBuf, extractor: String) -> Result<()> {
     let data = serde_json::to_string(&sarif_json)
         .context(format!("Failed to serialize SARIF JSON: {:?}", path))?;
     // Write the updated SARIF back to the file
-    std::fs::write(path, data)
-        .context(format!("Failed to write SARIF file: {:?}", path))?;
+    std::fs::write(path, data).context(format!("Failed to write SARIF file: {:?}", path))?;
     Ok(())
 }
 
