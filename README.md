@@ -29,7 +29,7 @@ This action is designed to be used in conjunction with the [CodeQL][CodeQL] anal
 
 ```yml
 - name: "CodeQL Extractor Action"
-  uses: advanced-security/codeql-extractor-action@v0.0.13
+  uses: advanced-security/codeql-extractor-action@v0.0.14
   with:
     # Repository reference (e.g. "owner/repo", "owner/repo@ref")
     extractor: "advanced-security/codeql-extractor-iac"
