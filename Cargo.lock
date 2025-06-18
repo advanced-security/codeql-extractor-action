@@ -257,7 +257,7 @@ dependencies = [
 
 [[package]]
 name = "codeql-extractor-action"
-version = "0.0.13"
+version = "0.0.14"
 dependencies = [
  "anyhow",
  "dotenvy",
@@ -684,9 +684,9 @@ dependencies = [
 
 [[package]]
 name = "ghastoolkit"
-version = "0.11.3"
+version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82297a30cb0d3ac0f68e0bd657e3feef821f4e2d0e9eb598e50d5f6335bbc946"
+checksum = "6ff7ddc4e06a0eb29bc89b1dfbb932417d11503a5d6cc5cea123b1adc841a956"
 dependencies = [
  "anyhow",
  "async-trait",

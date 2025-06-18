@@ -30,4 +30,4 @@ ghastoolkit = { version = "^0.11", features = ["toolcache"] }
 # GitHub API
 octocrab = "^0.44"
 openssl = { version = "0.10", features = ["vendored"] }
-serde_json = "1.0.140"
+serde_json = "1.0"
