@@ -18,7 +18,7 @@ The action is built using a Debian based Docker image.
 
 ## Testing
 
-You can test the Rust code locally using `cargo tests`.
+You can test the Rust code locally using `cargo test`.
 
 ```sh
 cargo test
