@@ -1,4 +1,4 @@
-FROM docker.io/library/rust:1.87-slim AS builder
+FROM docker.io/library/rust:1.89-slim AS builder
 
 ENV TARGET=x86_64-unknown-linux-gnu
 
