@@ -8,7 +8,7 @@ It is designed to be used in conjunction with the [CodeQL][CodeQL] analysis tool
 The project is written in Rust and used the [ghactions](https://crates.io/crates/ghactions) crate to simplify the development of GitHub Actions in Rust.
 The action is built using a Debian based Docker image.
 
-## Guildelins
+## Guidelines
 
 - Use cargo fmt to format the code.
 - Use cargo clippy to lint the code.
