@@ -2,7 +2,7 @@
 applyTo: '**/*.rs'
 ---
 
-This is a GitHub Action that that allows you to specify a CodeQL extractor to be used in your workflows as an author of an Extractor.
+This is a GitHub Action that allows you to specify a CodeQL extractor to be used in your workflows as an author of an Extractor.
 It is designed to be used in conjunction with the [CodeQL][CodeQL] analysis tool, which is a powerful static analysis tool that can be used to find vulnerabilities in your code.
 
 The project is written in Rust and used the [ghactions](https://crates.io/crates/ghactions) crate to simplify the development of GitHub Actions in Rust.
