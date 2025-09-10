@@ -50,7 +50,7 @@ async fn main() -> Result<()> {
                 .args(&["codeql", "set-version", codeql_version.into()])
                 .status()
                 .await
-                .context("Failed to execute `gh codeql install` command")?;
+                .context("Failed to execute `gh codeql set-version` command")?;
         }
 
         log::info!("CodeQL installed");
