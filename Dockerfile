@@ -36,15 +36,7 @@ ARG github_token
 
 # Install the CodeQL extension for GitHub CLI
 RUN --mount=type=secret,id=github_token \
-    if [ -f "/run/secrets/github_token" ]; then \
-      export GITHUB_TOKEN=$(cat /run/secrets/github_token); \
-      gh auth setup-git; \
-      gh extensions install github/gh-codeql && \
-      gh codeql install-stub; \
-    else \
-      echo "No GitHub token provided, using public access"; \
-      gh extensions install github/gh-codeql && \
-      gh codeql install-stub; \
-    fi
+    gh extensions install github/gh-codeql && \
+      gh codeql install-stub
 
 ENTRYPOINT [ "codeql-extractor-action" ]
