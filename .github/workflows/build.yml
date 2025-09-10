@@ -106,6 +106,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           # SBOM Settings
           sbom: true
+          # Secrets for GH CLI
+          secret-envs: |
+            GH_TOKEN=${{ github.token }}
 
       # Upload Software Bill of Materials (SBOM) to GitHub
       - name: Upload SBOM
