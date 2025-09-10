@@ -41,10 +41,18 @@ async fn main() -> Result<()> {
     if !codeql.is_installed().await {
         let codeql_version = action.codeql_version();
         log::info!("CodeQL not installed, installing `{codeql_version}`...");
-        codeql
-            .install(&octocrab, codeql_version)
-            .await
-            .context("Failed to install CodeQL")?;
+
+        if let Err(error) = codeql.install(&octocrab, codeql_version).await {
+            log::warn!("Failed to install CodeQL: {error:?}");
+            log::info!("Attempting to install CodeQL using GitHub CLI...");
+
+            tokio::process::Command::new("gh")
+                .args(&["codeql", "set-version", codeql_version.into()])
+                .status()
+                .await
+                .context("Failed to execute `gh codeql install` command")?;
+        }
+
         log::info!("CodeQL installed");
     } else {
         log::info!("CodeQL already installed");

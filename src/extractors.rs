@@ -86,6 +86,15 @@ pub async fn fetch_extractor(
         }
     };
 
+    // Get and log the size of the extractor archive
+    if let Ok(metadata) = std::fs::metadata(&extractor_archive) {
+        let size_bytes = metadata.len();
+        let size_mb = size_bytes as f64 / 1_048_576.0; // Convert to MB (1 MB = 1,048,576 bytes)
+        log::info!("Extractor archive size: {:.2} MB ({} bytes)", size_mb, size_bytes);
+    } else {
+        log::warn!("Unable to get size information for the extractor archive");
+    }
+
     if attest {
         log::info!("Attesting asset {extractor_tarball:?}");
 

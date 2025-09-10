@@ -31,4 +31,7 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Install the CodeQL extension for GitHub CLI
+RUN gh extensions install github/gh-codeql
+
 ENTRYPOINT [ "codeql-extractor-action" ]
