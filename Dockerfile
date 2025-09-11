@@ -31,12 +31,4 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Define GitHub token as a build ARG
-ARG github_token
-
-# Install the CodeQL extension for GitHub CLI
-RUN --mount=type=secret,id=github_token \
-    gh extensions install github/gh-codeql && \
-      gh codeql install-stub
-
 ENTRYPOINT [ "codeql-extractor-action" ]
