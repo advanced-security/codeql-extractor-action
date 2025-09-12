@@ -136,13 +136,24 @@ impl Action {
             .collect()
     }
 
+    /// Gets the CodeQL directory to use for the action. It will first check if a local
+    /// `.codeql` directory exists in the working directory parent. If not, it will
+    /// use the `RUNNER_TEMP` directory. If neither exists, it will create a new
+    /// `.codeql` directory in the working directory parent.
+    ///
+    /// It uses the parent of the working directory to to stop issues where the
+    /// database/sarif files gets indexed by CodeQL.
     pub fn get_codeql_dir(&self) -> Result<PathBuf> {
         let paths = vec![
-            // Local CodeQL directory in the working directory
-            self.working_directory()?.join(".codeql"),
+            // Local CodeQL directory in the working directory parent
+            self.working_directory()?
+                .join("..")
+                .join(".codeql")
+                .canonicalize()?,
             // Runner temp directory
             PathBuf::from(std::env::var("RUNNER_TEMP").unwrap_or_else(|_| "/tmp".to_string()))
-                .join(".codeql"),
+                .join(".codeql")
+                .canonicalize()?,
         ];
 
         for path in paths {
