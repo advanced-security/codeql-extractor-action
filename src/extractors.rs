@@ -4,22 +4,67 @@ use ghactions_core::repository::reference::RepositoryReference as Repository;
 use octocrab::models::repos::{Asset, Release};
 use std::{os::unix::fs::PermissionsExt, path::PathBuf};
 
+/// Fetches a release from a GitHub repository
+///
+/// If the repository reference includes a specific tag, it fetches that release.
+/// Otherwise, it fetches the latest release.
+///
+/// # Arguments
+/// * `client` - The Octocrab client to use for API requests
+/// * `repository` - The repository reference containing owner, name, and optional tag
+///
+/// # Returns
+/// * `Result<Release>` - The fetched release or an error
 async fn fetch_releases(client: &octocrab::Octocrab, repository: &Repository) -> Result<Release> {
+    log::debug!(
+        "Fetching releases for repository: {}/{}",
+        repository.owner,
+        repository.name
+    );
     let release = if let Some(rel) = &repository.reference {
         log::info!("Fetching release by tag: {}", rel);
-        client
+        log::debug!(
+            "API call: repos/{}/{}/releases/tags/{}",
+            repository.owner,
+            repository.name,
+            rel
+        );
+        match client
             .repos(repository.owner.clone(), repository.name.clone())
             .releases()
             .get_by_tag(&rel)
-            .await?
+            .await
+        {
+            Ok(release) => release,
+            Err(e) => {
+                log::error!("Failed to fetch release by tag '{}': {}", rel, e);
+                return Err(anyhow::anyhow!(
+                    "Failed to fetch release by tag '{}': {}",
+                    rel,
+                    e
+                ));
+            }
+        }
     } else {
-        log::info!("Fetching latest release",);
+        log::info!("Fetching latest release");
+        log::debug!(
+            "API call: repos/{}/{}/releases/latest",
+            repository.owner,
+            repository.name
+        );
         // Get Latest Release
-        client
+        match client
             .repos(repository.owner.clone(), repository.name.clone())
             .releases()
             .get_latest()
-            .await?
+            .await
+        {
+            Ok(release) => release,
+            Err(e) => {
+                log::error!("Failed to fetch latest release: {}", e);
+                return Err(anyhow::anyhow!("Failed to fetch latest release: {}", e));
+            }
+        }
     };
 
     log::info!("Release :: {} - {:?}", release.tag_name, release.created_at);
@@ -135,16 +180,24 @@ pub async fn fetch_extractor(
     }
 
     // Find `codeql-extractor.yml` in the extracted directory using glob
-    for glob in glob::glob(
+    log::debug!(
+        "Searching for codeql-extractor.yml in {}",
+        extractor_pack.display()
+    );
+    if let Some(glob_result) = glob::glob(
         &extractor_pack
             .join("**/codeql-extractor.yml")
             .to_string_lossy(),
-    )? {
-        match glob {
+    )?
+    .next()
+    {
+        match glob_result {
             Ok(path) => {
                 // TODO: Load and check the extractor configuration
-                log::debug!("Extractor Path :: {path:?}");
+                log::debug!("Found extractor configuration at: {path:?}");
                 let full_path = path.parent().unwrap().to_path_buf().canonicalize()?;
+                log::debug!("Using extractor directory: {}", full_path.display());
+
                 // Linux and Macos
                 #[cfg(unix)]
                 {
@@ -154,31 +207,95 @@ pub async fn fetch_extractor(
                 return Ok(full_path);
             }
             Err(e) => {
-                log::error!("Failed to find extractor: {e}");
-                return Err(anyhow::anyhow!("Failed to find extractor: {e}"));
+                log::error!("Failed to access extractor path: {e}");
+                return Err(anyhow::anyhow!("Failed to access extractor path: {e}"));
             }
         }
+    } else {
+        log::warn!(
+            "No codeql-extractor.yml found in {}",
+            extractor_pack.display()
+        );
     }
     Ok(extractor_pack)
 }
 
 /// Update the SARIF file with the extractor information (CodeQL ${language})
 ///
-///  Update only the `runs.0.tool.driver` section of the SARIF file
+/// Updates only the `runs.0.tool.driver` section of the SARIF file to include
+/// information about which extractor was used. This helps in distinguishing
+/// results from different CodeQL extractors when analyzing multiple languages.
+///
+/// # Arguments
+/// * `path` - Path to the SARIF file that needs to be updated
+/// * `extractor` - Name of the extractor to be added to the SARIF metadata
+///
+/// # Returns
+/// * `Result<()>` - Success or an error if the SARIF file couldn't be updated
 pub fn update_sarif(path: &PathBuf, extractor: String) -> Result<()> {
-    let sarif_content =
-        std::fs::read_to_string(path).context(format!("Failed to read SARIF file: {:?}", path))?;
-    let mut sarif_json: serde_json::Value = serde_json::from_str(&sarif_content)
-        .context(format!("Failed to parse SARIF file: {:?}", path))?;
+    log::debug!(
+        "Updating SARIF file at {} with extractor information: {}",
+        path.display(),
+        extractor
+    );
 
-    log::debug!("SARIF JSON :: {sarif_json:#?}");
+    // Read SARIF file
+    let sarif_content = match std::fs::read_to_string(path) {
+        Ok(content) => content,
+        Err(e) => {
+            log::error!("Failed to read SARIF file {}: {}", path.display(), e);
+            return Err(anyhow::anyhow!(
+                "Failed to read SARIF file: {:?} - {}",
+                path,
+                e
+            ));
+        }
+    };
+
+    // Parse SARIF JSON
+    let mut sarif_json: serde_json::Value = match serde_json::from_str(&sarif_content) {
+        Ok(json) => json,
+        Err(e) => {
+            log::error!(
+                "Failed to parse SARIF file {} as JSON: {}",
+                path.display(),
+                e
+            );
+            return Err(anyhow::anyhow!(
+                "Failed to parse SARIF file: {:?} - {}",
+                path,
+                e
+            ));
+        }
+    };
+
+    log::debug!(
+        "SARIF structure: has runs={}, has results={}",
+        sarif_json.get("runs").is_some(),
+        sarif_json
+            .get("runs")
+            .and_then(|r| r.get(0))
+            .and_then(|r| r.get("results"))
+            .is_some()
+    );
+
+    // Update the tool driver name
     if let Some(tool) = sarif_json
         .get_mut("runs")
         .and_then(|runs| runs.get_mut(0))
         .and_then(|run| run.get_mut("tool"))
     {
         if let Some(driver) = tool.get_mut("driver") {
-            driver["name"] = serde_json::Value::String(format!("CodeQL - {}", extractor));
+            let new_name = format!("CodeQL - {}", extractor);
+            log::debug!(
+                "Updating tool.driver.name from '{}' to '{}'",
+                driver
+                    .get("name")
+                    .and_then(|n| n.as_str())
+                    .unwrap_or("unknown"),
+                new_name
+            );
+            driver["name"] = serde_json::Value::String(new_name);
             log::info!("Updated SARIF file with extractor: {extractor}");
         } else {
             log::warn!("No 'driver' field found in SARIF file");
@@ -187,14 +304,43 @@ pub fn update_sarif(path: &PathBuf, extractor: String) -> Result<()> {
         log::warn!("No 'runs' or 'tool' field found in SARIF file");
     }
 
-    let data = serde_json::to_string(&sarif_json)
-        .context(format!("Failed to serialize SARIF JSON: {:?}", path))?;
+    // Serialize and write back to file
+    let data = match serde_json::to_string(&sarif_json) {
+        Ok(json) => json,
+        Err(e) => {
+            log::error!("Failed to serialize updated SARIF JSON: {}", e);
+            return Err(anyhow::anyhow!(
+                "Failed to serialize SARIF JSON: {:?} - {}",
+                path,
+                e
+            ));
+        }
+    };
+
     // Write the updated SARIF back to the file
-    std::fs::write(path, data).context(format!("Failed to write SARIF file: {:?}", path))?;
+    if let Err(e) = std::fs::write(path, &data) {
+        log::error!("Failed to write updated SARIF file: {}", e);
+        return Err(anyhow::anyhow!(
+            "Failed to write SARIF file: {:?} - {}",
+            path,
+            e
+        ));
+    }
+
+    log::debug!("Successfully updated SARIF file at {}", path.display());
     Ok(())
 }
 
-/// Update the permissions for tool scripts (*.sh) and the extractor (extractor)
+/// Update the permissions for tool scripts (*.sh) and the extractor executables
+///
+/// Makes shell scripts and extractor binaries executable by setting appropriate permissions.
+/// Looks for tools in standard locations for Linux (linux64/extractor) and macOS (osx64/extractor).
+///
+/// # Arguments
+/// * `path` - The base path where tools are located
+///
+/// # Returns
+/// * `Result<()>` - Success or an error if permissions couldn't be set
 fn update_tools_permisisons(path: &PathBuf) -> Result<()> {
     let tools_path = path.join("tools");
     log::info!("Tools :: {tools_path:?}");
@@ -226,10 +372,45 @@ fn update_tools_permisisons(path: &PathBuf) -> Result<()> {
     Ok(())
 }
 
-/// Sets the file permissions to be executable
+/// Sets the file permissions to be executable (read and execute for all users)
+///
+/// Sets the permissions to 0o555 (r-xr-xr-x) which allows reading and
+/// execution by all users, but no write permissions.
+///
+/// # Arguments
+/// * `path` - The path to the file whose permissions should be set
+///
+/// # Returns
+/// * `Result<()>` - Success or an error if permissions couldn't be set
 fn set_permissions(path: &PathBuf) -> Result<()> {
     log::info!("Setting permissions for :: {:?}", path);
+
+    // Get current permissions for logging
+    if let Ok(metadata) = std::fs::metadata(path) {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            log::debug!("Current permissions: {:o}", metadata.permissions().mode());
+        }
+    } else {
+        log::warn!("Could not get current file metadata for {}", path.display());
+    }
+
+    log::debug!("Setting permissions to 0o555 (r-xr-xr-x)");
     let perms = std::fs::Permissions::from_mode(0o555);
-    std::fs::set_permissions(&path, perms)?;
-    Ok(())
+
+    match std::fs::set_permissions(&path, perms) {
+        Ok(_) => {
+            log::debug!("Successfully set permissions for {}", path.display());
+            Ok(())
+        }
+        Err(e) => {
+            log::error!("Failed to set permissions for {}: {}", path.display(), e);
+            Err(anyhow::anyhow!(
+                "Failed to set permissions for {}: {}",
+                path.display(),
+                e
+            ))
+        }
+    }
 }
