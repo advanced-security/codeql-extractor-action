@@ -6,9 +6,12 @@ use ghastoolkit::prelude::*;
 use log::{debug, info};
 
 mod action;
+mod codeql;
 mod extractors;
 
 use action::{AUTHORS, Action, BANNER, VERSION};
+
+use crate::codeql::gh_codeql_download;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -46,11 +49,14 @@ async fn main() -> Result<()> {
             log::warn!("Failed to install CodeQL: {error:?}");
             log::info!("Attempting to install CodeQL using GitHub CLI...");
 
-            tokio::process::Command::new("gh")
-                .args(&["codeql", "set-version", codeql_version.into()])
-                .status()
+            let location = gh_codeql_download(codeql_version).await
+                .context("Failed to download CodeQL using GitHub CLI")?;
+            
+            codeql = CodeQL::init()
+                .path(location)
+                .build()
                 .await
-                .context("Failed to execute `gh codeql set-version` command")?;
+                .context("Failed to create CodeQL instance after GitHub CLI installation")?;
         }
 
         log::info!("CodeQL installed");
