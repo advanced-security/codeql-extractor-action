@@ -285,7 +285,7 @@ async fn main() -> Result<()> {
     // If the action is running in Actions, the SARIF file must be a relative path
     // This is because we assume that this code is running in a container which mounts
     // the repository at /github/workspace
-    if let Ok(_) = std::env::var("CI") {
+    if std::env::var("CI").is_ok() {
         // If running in a CI environment, set the SARIF as a relative path
         let relative_path = sarif_output.strip_prefix(&cwd).unwrap_or(&sarif_output);
         log::debug!(
