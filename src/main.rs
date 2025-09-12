@@ -13,9 +13,8 @@ mod action;
 mod codeql;
 mod extractors;
 
+use crate::codeql::codeql_download;
 use action::{AUTHORS, Action, BANNER, VERSION};
-
-use crate::codeql::gh_codeql_download;
 
 /// Main function that drives the CodeQL Extractor Action workflow
 ///
@@ -50,35 +49,14 @@ async fn main() -> Result<()> {
 
     group!("Setting up CodeQL");
 
-    let mut codeql = CodeQL::init()
-        .build()
+    let mut codeql = codeql_download(&action)
         .await
-        .context("Failed to create CodeQL instance")?;
-    log::debug!("CodeQL :: {codeql:?}");
+        .context("Failed to set up CodeQL")?;
+    log::info!(
+        "CodeQL CLI Version :: {}",
+        codeql.version().unwrap_or_default()
+    );
 
-    if !codeql.is_installed().await {
-        let codeql_version = action.codeql_version();
-        log::info!("CodeQL not installed, installing `{codeql_version}`...");
-
-        if let Err(error) = codeql.install(&octocrab, codeql_version).await {
-            log::warn!("Failed to install CodeQL: {error:?}");
-            log::info!("Attempting to install CodeQL using GitHub CLI...");
-
-            let location = gh_codeql_download(codeql_version)
-                .await
-                .context("Failed to download CodeQL using GitHub CLI")?;
-
-            codeql = CodeQL::init()
-                .path(location)
-                .build()
-                .await
-                .context("Failed to create CodeQL instance after GitHub CLI installation")?;
-        }
-
-        log::info!("CodeQL installed");
-    } else {
-        log::info!("CodeQL already installed");
-    }
     // Packs installation
     action.install_packs(&codeql).await?;
 

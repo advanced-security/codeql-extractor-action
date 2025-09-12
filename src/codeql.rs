@@ -5,7 +5,65 @@
 //! installation process fails.
 
 use anyhow::{Context, Result};
+use ghactions::ActionTrait;
 use ghastoolkit::CodeQL;
+
+use crate::action::Action;
+
+/// Download and install the CodeQL CLI, with fallback to GitHub CLI if necessary
+pub async fn codeql_download(action: &Action) -> Result<CodeQL> {
+    let token = action.get_token();
+
+    let mut codeql = CodeQL::init()
+        .build()
+        .await
+        .context("Failed to create CodeQL instance")?;
+    log::debug!("CodeQL :: {codeql:?}");
+
+    if !codeql.is_installed().await {
+        let codeql_version = action.codeql_version();
+        log::info!("CodeQL not installed, installing `{codeql_version}`...");
+
+        // Try to install with authentication first (if token is available)
+        if !token.is_empty() {
+            let octocrab_auth = action.octocrab_with_token(token)?;
+            if let Ok(_) = codeql.install(&octocrab_auth, codeql_version).await {
+                log::info!("CodeQL installed using authentication");
+                return Ok(codeql);
+            } else {
+                log::warn!(
+                    "Failed to install CodeQL with authentication, trying without authentication..."
+                );
+            }
+        }
+
+        // Try to install without authentication
+        let octocrab = action.octocrab_without_token()?;
+        if let Ok(_) = codeql.install(&octocrab, codeql_version).await {
+            log::info!("CodeQL installed without authentication");
+            return Ok(codeql);
+        } else {
+            log::warn!("Failed to install CodeQL without authentication");
+            log::info!("Attempting to install CodeQL using GitHub CLI...");
+        }
+
+        let location = gh_codeql_download(codeql_version)
+            .await
+            .context("Failed to download CodeQL using GitHub CLI")?;
+        // Reinitialize CodeQL with the new path
+        codeql = CodeQL::init()
+            .path(location)
+            .build()
+            .await
+            .context("Failed to create CodeQL instance after GitHub CLI installation")?;
+
+        log::info!("CodeQL installed");
+    } else {
+        log::info!("CodeQL already installed");
+    }
+
+    Ok(codeql)
+}
 
 /// Download and install the CodeQL CLI using the GitHub CLI
 ///
@@ -20,7 +78,7 @@ use ghastoolkit::CodeQL;
 ///
 /// # Returns
 /// * `Result<String>` - Path to the installed CodeQL binary or an error
-pub async fn gh_codeql_download(codeql_version: &str) -> Result<String> {
+async fn gh_codeql_download(codeql_version: &str) -> Result<String> {
     log::info!("Downloading CodeQL Extension for GitHub CLI...");
     log::debug!("Running command: gh extensions install github/gh-codeql");
     let status = tokio::process::Command::new("gh")

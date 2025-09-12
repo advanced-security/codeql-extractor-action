@@ -103,6 +103,15 @@ pub struct Action {
 }
 
 impl Action {
+    /// Returns the GitHub Token for the action
+    pub fn get_token(&self) -> String {
+        if self.token.is_empty() {
+            std::env::var("GITHUB_TOKEN").unwrap_or_default()
+        } else {
+            self.token.clone()
+        }
+    }
+
     /// Returns the working directory for the action
     ///
     /// If no working directory is provided, the current directory is used.
