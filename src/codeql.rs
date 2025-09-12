@@ -26,7 +26,7 @@ pub async fn codeql_download(action: &Action) -> Result<CodeQL> {
 
         // Try to install with authentication first (if token is available)
         if !token.is_empty() {
-            let octocrab_auth = action.octocrab_with_token(token)?;
+            let octocrab_auth = action.octocrab_with_token(&token)?;
             if let Ok(_) = codeql.install(&octocrab_auth, codeql_version).await {
                 log::info!("CodeQL installed using authentication");
                 return Ok(codeql);
@@ -35,6 +35,8 @@ pub async fn codeql_download(action: &Action) -> Result<CodeQL> {
                     "Failed to install CodeQL with authentication, trying without authentication..."
                 );
             }
+        } else {
+            log::debug!("No token provided, skipping authenticated installation attempt");
         }
 
         // Try to install without authentication
@@ -47,15 +49,17 @@ pub async fn codeql_download(action: &Action) -> Result<CodeQL> {
             log::info!("Attempting to install CodeQL using GitHub CLI...");
         }
 
-        let location = gh_codeql_download(codeql_version)
-            .await
-            .context("Failed to download CodeQL using GitHub CLI")?;
-        // Reinitialize CodeQL with the new path
-        codeql = CodeQL::init()
-            .path(location)
-            .build()
-            .await
-            .context("Failed to create CodeQL instance after GitHub CLI installation")?;
+        if !token.is_empty() {
+            let location = gh_codeql_download(codeql_version, &token)
+                .await
+                .context("Failed to download CodeQL using GitHub CLI")?;
+            // Reinitialize CodeQL with the new path
+            codeql = CodeQL::init()
+                .path(location)
+                .build()
+                .await
+                .context("Failed to create CodeQL instance after GitHub CLI installation")?;
+        }
 
         log::info!("CodeQL installed");
     } else {
@@ -78,15 +82,13 @@ pub async fn codeql_download(action: &Action) -> Result<CodeQL> {
 ///
 /// # Returns
 /// * `Result<String>` - Path to the installed CodeQL binary or an error
-async fn gh_codeql_download(codeql_version: &str) -> Result<String> {
+async fn gh_codeql_download(codeql_version: &str, token: &String) -> Result<String> {
     log::info!("Downloading CodeQL Extension for GitHub CLI...");
     log::debug!("Running command: gh extensions install github/gh-codeql");
+
     let status = tokio::process::Command::new("gh")
         .args(&["extensions", "install", "github/gh-codeql"])
-        .env(
-            "GH_TOKEN",
-            std::env::var("GITHUB_TOKEN").unwrap_or_default(),
-        )
+        .env("GH_TOKEN", &token)
         .status()
         .await
         .context("Failed to execute `gh extensions install github/gh-codeql` command")?;
@@ -107,10 +109,7 @@ async fn gh_codeql_download(codeql_version: &str) -> Result<String> {
     log::debug!("Running command: gh codeql set-version {codeql_version}");
     let status = tokio::process::Command::new("gh")
         .args(&["codeql", "set-version", codeql_version])
-        .env(
-            "GH_TOKEN",
-            std::env::var("GITHUB_TOKEN").unwrap_or_default(),
-        )
+        .env("GH_TOKEN", &token)
         .status()
         .await
         .context("Failed to execute `gh codeql set-version` command")?;
@@ -131,10 +130,7 @@ async fn gh_codeql_download(codeql_version: &str) -> Result<String> {
     log::debug!("Running command: gh codeql install-stub");
     let status = tokio::process::Command::new("gh")
         .args(&["codeql", "install-stub"])
-        .env(
-            "GH_TOKEN",
-            std::env::var("GITHUB_TOKEN").unwrap_or_default(),
-        )
+        .env("GH_TOKEN", &token)
         .status()
         .await
         .context("Failed to execute `gh codeql install-stub` command")?;

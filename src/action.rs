@@ -105,10 +105,15 @@ pub struct Action {
 impl Action {
     /// Returns the GitHub Token for the action
     pub fn get_token(&self) -> String {
-        if self.token.is_empty() {
-            std::env::var("GITHUB_TOKEN").unwrap_or_default()
-        } else {
+        if !self.token.is_empty() {
+            log::debug!("Using provided token");
             self.token.clone()
+        } else if let Ok(gh_token) = std::env::var("GITHUB_TOKEN") {
+            log::debug!("No token provided, using GITHUB_TOKEN environment variable");
+            gh_token
+        } else {
+            log::debug!("No token provided, and GITHUB_TOKEN environment variable not set");
+            String::new()
         }
     }
 
@@ -205,18 +210,18 @@ impl Action {
     fn get_codeql_directories(&self) -> Vec<PathBuf> {
         let mut paths = Vec::new();
 
-        // GITHUB_WORKSPACE
-        if let Ok(github_workspace) = std::env::var("GITHUB_WORKSPACE") {
-            log::debug!("GITHUB_WORKSPACE found: {}", github_workspace);
-            paths.push(PathBuf::from(github_workspace).join(".codeql"));
-        }
-
         // Local CodeQL directory in the working directory
         if let Ok(working_dir) = self.working_directory() {
             if let Ok(local_codeql) = working_dir.join(".codeql").canonicalize() {
                 log::debug!("Local working directory found: {}", local_codeql.display());
                 paths.push(local_codeql);
             }
+        }
+
+        // GITHUB_WORKSPACE
+        if let Ok(github_workspace) = std::env::var("GITHUB_WORKSPACE") {
+            log::debug!("GITHUB_WORKSPACE found: {}", github_workspace);
+            paths.push(PathBuf::from(github_workspace).join(".codeql"));
         }
 
         // Runner temp directory
