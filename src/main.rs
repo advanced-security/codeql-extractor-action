@@ -269,8 +269,13 @@ async fn main() -> Result<()> {
 
         log::info!("Post-processing SARIF results");
 
-        extractors::update_sarif(&sarif_path, extractor.display_name.clone())
-            .context("Failed to update SARIF file with extractor information")?;
+        if action.sarif_tool_name() {
+            log::info!("Updating SARIF tool name with extractor information");
+            extractors::update_sarif(&sarif_path, extractor.display_name.clone())
+                .context("Failed to update SARIF file with extractor information")?;
+        } else {
+            log::info!("Skipping SARIF tool name update as per configuration");
+        }
 
         // Reload the database to get analysis info
         database.reload()?;

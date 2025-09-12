@@ -25,6 +25,9 @@ inputs:
     default: latest
   working-directory:
     description: Working Directory
+  sarif-tool-name:
+    description: Re-write SARIF file tool name
+    default: 'true'
   attestation:
     description: Attestation
     default: 'false'
