@@ -36,7 +36,7 @@ If you have an idea for a new feature or enhancement, please open an issue on Gi
 
 - [Rust](https://www.rust-lang.org/tools/install)
 - [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
-- [CodeQL](https://codeql.github.com/docs/codeql-cli/getting-started/) (optional as the action will download it for you
+- [CodeQL](https://codeql.github.com/docs/codeql-cli/getting-started/) (optional as the action will download it for you)
   - `gh-codeql` is a great tool to help you with CodeQL CLI.
 
 ## Local Setup
