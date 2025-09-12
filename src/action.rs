@@ -85,6 +85,14 @@ pub struct Action {
     )]
     working_directory: String,
 
+    /// Re-write SARIF file tool name
+    #[input(
+        description = "Re-write SARIF file tool name",
+        rename = "sarif-tool-name",
+        default = "true"
+    )]
+    sarif_tool_name: bool,
+
     /// Attestation
     #[input(description = "Attestation", default = "false")]
     attestation: bool,
@@ -359,6 +367,11 @@ impl Action {
     pub fn allow_empty_database(&self) -> bool {
         log::debug!("Allow empty database: {}", self.allow_empty_database);
         self.allow_empty_database
+    }
+
+    pub fn sarif_tool_name(&self) -> bool {
+        log::debug!("Re-write SARIF tool name: {}", self.sarif_tool_name);
+        self.sarif_tool_name
     }
 }
 
