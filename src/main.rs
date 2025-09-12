@@ -41,7 +41,9 @@ async fn main() -> Result<()> {
     let cwd = action
         .working_directory()
         .context("Failed to get working directory")?;
-    let codeql_dir = action.get_codeql_dir()?;
+    let codeql_dir = action
+        .get_codeql_dir()
+        .context("Failed to get CodeQL directory")?;
 
     let databases = codeql_dir.join("databases");
     let sarif_output = codeql_dir.join("results");

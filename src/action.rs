@@ -177,6 +177,47 @@ impl Action {
         languages
     }
 
+    /// Gets the possible directories for CodeQL operations.
+    ///
+    /// This function identifies potential locations for CodeQL operation directories in the following order:
+    /// 1. The `.codeql` directory in the GitHub workspace (if running in GitHub Actions)
+    /// 2. The `.codeql` directory in the current working directory
+    /// 3. The `.codeql` directory in the GitHub Actions runner's temp directory (if available)
+    /// 4. The `.codeql` directory in the system's temporary directory
+    ///
+    /// Each path is checked for existence and created if necessary by the caller.
+    ///
+    /// # Returns
+    /// - `Result<Vec<PathBuf>>`: A vector of possible directory paths for CodeQL operations
+    ///
+    /// # Errors
+    /// - If `working_directory()` fails
+    /// - If path canonicalization fails
+    fn get_codeql_directories(&self) -> Result<Vec<PathBuf>> {
+        let mut paths = Vec::new();
+
+        // GITHUB_WORKSPACE
+        if let Ok(github_workspace) = std::env::var("GITHUB_WORKSPACE") {
+            paths.push(PathBuf::from(github_workspace).join(".codeql"));
+        }
+
+        // Local CodeQL directory in the working directory
+        if let Ok(local_codeql) = self.working_directory()?.join(".codeql").canonicalize() {
+            paths.push(local_codeql);
+        }
+
+        // Runner temp directory
+        if let Ok(runner_temp) = std::env::var("RUNNER_TEMP") {
+            paths.push(PathBuf::from(runner_temp).join(".codeql").canonicalize()?);
+        }
+        // temp_dir
+        if let Ok(temp_dir) = std::env::temp_dir().canonicalize() {
+            paths.push(temp_dir.join(".codeql"));
+        }
+
+        Ok(paths)
+    }
+
     /// Returns the directory to use for CodeQL operations.
     ///
     /// Gets the CodeQL directory to use for the action. It will first check if a local
@@ -187,17 +228,8 @@ impl Action {
     /// It uses the parent of the working directory to to stop issues where the
     /// database/sarif files gets indexed by CodeQL.
     pub fn get_codeql_dir(&self) -> Result<PathBuf> {
-        let paths = vec![
-            // Local CodeQL directory in the working directory parent
-            self.working_directory()?
-                .join("..")
-                .join(".codeql")
-                .canonicalize()?,
-            // Runner temp directory
-            PathBuf::from(std::env::var("RUNNER_TEMP").unwrap_or_else(|_| "/tmp".to_string()))
-                .join(".codeql")
-                .canonicalize()?,
-        ];
+        let paths = self.get_codeql_directories()?;
+        log::debug!("Possible CodeQL directories: {:?}", paths);
 
         for path in paths {
             if !path.exists() {
