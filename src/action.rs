@@ -1,4 +1,8 @@
 #![allow(dead_code)]
+//! Action module for defining and handling the GitHub Action's inputs, outputs, and core functionality
+//!
+//! This module contains the Action struct which represents the GitHub Action and implements
+//! the necessary functionality to process inputs, validate configurations, and manage outputs.
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
@@ -6,12 +10,17 @@ use ghactions::prelude::*;
 use ghactions_core::repository::reference::RepositoryReference as Repository;
 use ghastoolkit::{CodeQL, CodeQLPack, codeql::CodeQLLanguage};
 
+/// ASCII art banner for the CodeQL Extractor Action
 pub const BANNER: &str = r#"   ___          _        ____  __    __      _     _        _   
   / __\___   __| | ___  /___ \/ /   /__\_  _| |_  /_\   ___| |_ 
  / /  / _ \ / _` |/ _ \//  / / /   /_\ \ \/ / __|//_\\ / __| __|
 / /__| (_) | (_| |  __/ \_/ / /___//__  >  <| |_/  _  \ (__| |_ 
 \____/\___/ \__,_|\___\___,_\____/\__/ /_/\_\\__\_/ \_/\___|\__|"#;
+
+/// Version of the CodeQL Extractor Action, pulled from Cargo.toml
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// Authors of the CodeQL Extractor Action, pulled from Cargo.toml
 pub const AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
 
 /// This action is for 3rd party CodeQL extractors to be used in GitHub Actions
@@ -94,6 +103,13 @@ pub struct Action {
 }
 
 impl Action {
+    /// Returns the working directory for the action
+    ///
+    /// If no working directory is provided, the current directory is used.
+    /// Otherwise, the provided directory is resolved to an absolute path.
+    ///
+    /// # Returns
+    /// - `Result<PathBuf>`: The resolved working directory path
     pub fn working_directory(&self) -> Result<PathBuf> {
         if self.working_directory.is_empty() {
             log::debug!("No working directory provided, using the current directory");
@@ -108,8 +124,13 @@ impl Action {
             ))
     }
 
-    /// Gets the repository to use for the extractor. If the repository is not provided,
-    /// it will use the repository that the action is running in.
+    /// Gets the repository references for the extractors
+    ///
+    /// If no extractor repositories are provided, the current repository is used.
+    /// Otherwise, the provided repositories are parsed into Repository objects.
+    ///
+    /// # Returns
+    /// - `Result<Vec<Repository>>`: A list of parsed repository references
     pub fn extractor_repository(&self) -> Result<Vec<Repository>> {
         if self.extractors.is_empty() {
             log::debug!("No extractor repository provided, using the current repository");
@@ -129,6 +150,7 @@ impl Action {
             .collect::<Vec<Repository>>())
     }
 
+    /// Returns the list of languages to use for CodeQL analysis.
     pub fn languages(&self) -> Vec<CodeQLLanguage> {
         self.languages
             .iter()
@@ -136,6 +158,11 @@ impl Action {
             .collect()
     }
 
+    /// Returns the directory to use for CodeQL operations.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the directory cannot be created.
     pub fn get_codeql_dir(&self) -> Result<PathBuf> {
         let paths = vec![
             // Local CodeQL directory in the working directory
@@ -162,6 +189,11 @@ impl Action {
         Err(anyhow::anyhow!("Failed to create CodeQL directory",))
     }
 
+    /// Validates the provided languages against the supported CodeQL languages.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any of the provided languages are not supported.
     pub fn validate_languages(&self, codeql_languages: &Vec<CodeQLLanguage>) -> Result<()> {
         for lang in self.languages() {
             let mut supported = false;
@@ -187,6 +219,9 @@ impl Action {
         Ok(())
     }
 
+    /// Returns the CodeQL version to use.
+    ///
+    /// If the CodeQL version is not provided, it defaults to "latest".
     pub fn codeql_version(&self) -> &str {
         if self.codeql_version.is_empty() {
             log::debug!("No CodeQL version provided, using the latest version");
@@ -195,6 +230,11 @@ impl Action {
         &self.codeql_version
     }
 
+    /// Installs the specified CodeQL packs.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any of the packs cannot be installed.
     pub async fn install_packs(&self, codeql: &CodeQL) -> Result<()> {
         log::info!("Installing CodeQL Packs");
         for pack in &self.packs {
@@ -227,10 +267,12 @@ impl Action {
         Ok(())
     }
 
+    /// Returns whether attestation is enabled.
     pub fn attestation(&self) -> bool {
         self.attestation
     }
 
+    /// Returns whether empty databases are allowed.
     pub fn allow_empty_database(&self) -> bool {
         self.allow_empty_database
     }
@@ -240,6 +282,12 @@ impl Action {
 mod tests {
     use super::*;
 
+    /// Helper function to create a test Action instance with predefined values
+    ///
+    /// Creates an Action with:
+    /// - A single extractor repository "owner/repo"
+    /// - A single language "iac"
+    /// - Default values for all other fields
     fn action() -> Action {
         Action {
             extractors: vec!["owner/repo".to_string()],
@@ -248,6 +296,11 @@ mod tests {
         }
     }
 
+    /// Test that language validation works correctly
+    ///
+    /// Tests two scenarios:
+    /// 1. When a language is specified that isn't supported by CodeQL (should error)
+    /// 2. When a language is specified that is supported by CodeQL (should pass)
     #[test]
     fn test_validate_languages() {
         let action = action();

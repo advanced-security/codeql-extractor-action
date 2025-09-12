@@ -4,6 +4,17 @@ use ghactions_core::repository::reference::RepositoryReference as Repository;
 use octocrab::models::repos::{Asset, Release};
 use std::{os::unix::fs::PermissionsExt, path::PathBuf};
 
+/// Fetches a release from a GitHub repository
+///
+/// If the repository reference includes a specific tag, it fetches that release.
+/// Otherwise, it fetches the latest release.
+///
+/// # Arguments
+/// * `client` - The Octocrab client to use for API requests
+/// * `repository` - The repository reference containing owner, name, and optional tag
+///
+/// # Returns
+/// * `Result<Release>` - The fetched release or an error
 async fn fetch_releases(client: &octocrab::Octocrab, repository: &Repository) -> Result<Release> {
     let release = if let Some(rel) = &repository.reference {
         log::info!("Fetching release by tag: {}", rel);
@@ -164,7 +175,16 @@ pub async fn fetch_extractor(
 
 /// Update the SARIF file with the extractor information (CodeQL ${language})
 ///
-///  Update only the `runs.0.tool.driver` section of the SARIF file
+/// Updates only the `runs.0.tool.driver` section of the SARIF file to include 
+/// information about which extractor was used. This helps in distinguishing
+/// results from different CodeQL extractors when analyzing multiple languages.
+///
+/// # Arguments
+/// * `path` - Path to the SARIF file that needs to be updated
+/// * `extractor` - Name of the extractor to be added to the SARIF metadata
+///
+/// # Returns
+/// * `Result<()>` - Success or an error if the SARIF file couldn't be updated
 pub fn update_sarif(path: &PathBuf, extractor: String) -> Result<()> {
     let sarif_content =
         std::fs::read_to_string(path).context(format!("Failed to read SARIF file: {:?}", path))?;
@@ -194,7 +214,16 @@ pub fn update_sarif(path: &PathBuf, extractor: String) -> Result<()> {
     Ok(())
 }
 
-/// Update the permissions for tool scripts (*.sh) and the extractor (extractor)
+/// Update the permissions for tool scripts (*.sh) and the extractor executables
+///
+/// Makes shell scripts and extractor binaries executable by setting appropriate permissions.
+/// Looks for tools in standard locations for Linux (linux64/extractor) and macOS (osx64/extractor).
+///
+/// # Arguments
+/// * `path` - The base path where tools are located
+///
+/// # Returns
+/// * `Result<()>` - Success or an error if permissions couldn't be set
 fn update_tools_permisisons(path: &PathBuf) -> Result<()> {
     let tools_path = path.join("tools");
     log::info!("Tools :: {tools_path:?}");
@@ -226,7 +255,16 @@ fn update_tools_permisisons(path: &PathBuf) -> Result<()> {
     Ok(())
 }
 
-/// Sets the file permissions to be executable
+/// Sets the file permissions to be executable (read and execute for all users)
+///
+/// Sets the permissions to 0o555 (r-xr-xr-x) which allows reading and 
+/// execution by all users, but no write permissions.
+///
+/// # Arguments
+/// * `path` - The path to the file whose permissions should be set
+///
+/// # Returns
+/// * `Result<()>` - Success or an error if permissions couldn't be set
 fn set_permissions(path: &PathBuf) -> Result<()> {
     log::info!("Setting permissions for :: {:?}", path);
     let perms = std::fs::Permissions::from_mode(0o555);

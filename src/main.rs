@@ -1,3 +1,7 @@
+//! Main module for the CodeQL Extractor Action
+//! 
+//! This module contains the main function and orchestrates the entire workflow
+//! for setting up CodeQL, fetching and configuring extractors, and running analyses.
 use anyhow::{Context, Result};
 use ghactions::{ActionTrait, group, groupend};
 use ghactions_core::RepositoryReference;
@@ -13,6 +17,15 @@ use action::{AUTHORS, Action, BANNER, VERSION};
 
 use crate::codeql::gh_codeql_download;
 
+/// Main function that drives the CodeQL Extractor Action workflow
+///
+/// This function:
+/// 1. Initializes the Action
+/// 2. Sets up CodeQL
+/// 3. Fetches and configures the extractors
+/// 4. Creates databases for each language
+/// 5. Runs analyses on the databases
+/// 6. Processes and updates the SARIF results
 #[tokio::main]
 async fn main() -> Result<()> {
     let mut action = Action::init()?;
