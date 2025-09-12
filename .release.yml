@@ -1,6 +1,6 @@
 name: "codeql-extractor-action"
 repository: "advanced-security/codeql-extractor-action"
-version: 0.1.4
+version: 0.1.5
 
 ecosystems:
   - Docs
