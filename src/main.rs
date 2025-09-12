@@ -1,5 +1,5 @@
 //! Main module for the CodeQL Extractor Action
-//! 
+//!
 //! This module contains the main function and orchestrates the entire workflow
 //! for setting up CodeQL, fetching and configuring extractors, and running analyses.
 use anyhow::{Context, Result};
@@ -95,6 +95,10 @@ async fn main() -> Result<()> {
         info!("Created Extractor Directory :: {extractor_path:?}");
     }
 
+    log::debug!(
+        "Creating extractors container for {} repositories",
+        extractor_repos.len()
+    );
     let mut extractors: Vec<(CodeQLExtractor, RepositoryReference)> = Vec::new();
 
     for extractor_repo in extractor_repos.iter() {
@@ -103,23 +107,60 @@ async fn main() -> Result<()> {
             extractor_repo.owner,
             extractor_repo.name
         );
+        log::debug!("Repository reference details: {:?}", extractor_repo);
 
-        let extractor_path = extractors::fetch_extractor(
+        let extractor_path = match extractors::fetch_extractor(
             &octocrab,
             extractor_repo,
             action.attestation(),
             &extractor_path,
         )
         .await
-        .context("Failed to fetch extractor")?;
+        {
+            Ok(path) => {
+                log::debug!("Successfully fetched extractor to {}", path.display());
+                path
+            }
+            Err(e) => {
+                log::error!(
+                    "Failed to fetch extractor from {}/{}: {}",
+                    extractor_repo.owner,
+                    extractor_repo.name,
+                    e
+                );
+                return Err(e).context("Failed to fetch extractor");
+            }
+        };
         log::info!("Extractor :: {extractor_path:?}");
 
+        log::debug!(
+            "Appending search path to CodeQL instance: {}",
+            extractor_path.display()
+        );
         codeql.append_search_path(&extractor_path);
 
-        log::info!("Extractor Path :: {extractor_path:?}");
-        let extractor =
-            CodeQLExtractor::load_path(extractor_path).context("Failed to load extractor")?;
+        log::info!("Loading CodeQL extractor from path: {extractor_path:?}");
+        let extractor = match CodeQLExtractor::load_path(extractor_path.clone()) {
+            Ok(ext) => {
+                log::debug!(
+                    "Successfully loaded extractor: name={}, version={}, languages={:?}",
+                    ext.name,
+                    ext.version,
+                    ext.languages()
+                );
+                ext
+            }
+            Err(e) => {
+                log::error!(
+                    "Failed to load extractor from {}: {}",
+                    extractor_path.display(),
+                    e
+                );
+                return Err(anyhow::anyhow!("Failed to load extractor: {}", e));
+            }
+        };
 
+        log::debug!("Adding extractor to collection");
         extractors.push((extractor, extractor_repo.clone()));
     }
 
@@ -172,17 +213,33 @@ async fn main() -> Result<()> {
             .build()
             .context("Failed to create database")?;
 
-        log::info!("Creating database...");
+        log::info!("Creating CodeQL database for language: {}", language);
+        log::debug!(
+            "Database creation parameters for: {}",
+            database_path.display()
+        );
+
+        let start_time = std::time::Instant::now();
         match codeql.database(&database).overwrite().create().await {
             Ok(_) => {
-                log::debug!("Created database :: {database:?}");
+                let elapsed = start_time.elapsed();
+                log::debug!("Successfully created database :: {database:?}");
+                log::info!(
+                    "Database creation completed in {:.2} seconds",
+                    elapsed.as_secs_f64()
+                );
             }
             Err(e) => {
                 log::error!("Failed to create database: {e:?}");
+                log::debug!("Database creation error details: {:?}", e);
+
                 if action.allow_empty_database() {
-                    log::warn!("Allowing empty database");
+                    log::warn!(
+                        "Empty database allowed by configuration, continuing with next language"
+                    );
                     continue;
                 } else {
+                    log::error!("Empty database not allowed, aborting");
                     return Err(anyhow::anyhow!("Failed to create database: {e:?}"));
                 }
             }
@@ -197,6 +254,15 @@ async fn main() -> Result<()> {
 
         group!(format!("Running {language} analysis"));
 
+        log::info!("Starting CodeQL analysis for language: {}", language);
+        log::debug!(
+            "Analysis configuration: database={}, queries={:?}, output={}",
+            database_path.display(),
+            queries,
+            sarif_path.display()
+        );
+
+        let analysis_start_time = std::time::Instant::now();
         match codeql
             .database(&database)
             .queries(queries)
@@ -205,13 +271,17 @@ async fn main() -> Result<()> {
             .await
         {
             Ok(_) => {
-                log::info!("Analysis complete");
+                let elapsed = analysis_start_time.elapsed();
+                log::info!("Analysis complete in {:.2} seconds", elapsed.as_secs_f64());
+                log::debug!("Successfully analyzed database and generated SARIF output");
             }
             Err(ghastoolkit::GHASError::SerdeError(e)) => {
                 log::warn!("Failed to parse SARIF: {e:?}");
+                log::debug!("SARIF parsing error details: {:?}", e);
             }
             Err(e) => {
                 log::error!("Failed to analyze database: {e:?}");
+                log::debug!("Analysis error details: {:?}", e);
             }
         }
 

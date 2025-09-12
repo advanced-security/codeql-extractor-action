@@ -137,25 +137,44 @@ impl Action {
             return Ok(vec![Repository::parse(&self.get_repository()?)?]);
         }
 
-        log::debug!("Using the provided extractor repository");
+        log::debug!(
+            "Using the provided extractor repositories: {:?}",
+            self.extractors
+        );
 
-        Ok(self
+        let repos: Vec<Repository> = self
             .extractors
             .iter()
-            .filter_map(|ext| {
-                Repository::parse(ext)
-                    .context(format!("Failed to parse extractor repository `{ext}`"))
-                    .ok()
+            .filter_map(|ext| match Repository::parse(ext) {
+                Ok(repo) => {
+                    log::debug!(
+                        "Successfully parsed repository: {} / {}",
+                        repo.owner,
+                        repo.name
+                    );
+                    Some(repo)
+                }
+                Err(e) => {
+                    log::warn!("Failed to parse extractor repository `{}`: {}", ext, e);
+                    None
+                }
             })
-            .collect::<Vec<Repository>>())
+            .collect();
+
+        log::debug!("Parsed {} repositories", repos.len());
+        Ok(repos)
     }
 
     /// Returns the list of languages to use for CodeQL analysis.
     pub fn languages(&self) -> Vec<CodeQLLanguage> {
-        self.languages
+        log::debug!("Getting languages for analysis: {:?}", self.languages);
+        let languages = self
+            .languages
             .iter()
             .map(|lang| CodeQLLanguage::from(lang.as_str()))
-            .collect()
+            .collect();
+        log::debug!("Converted to CodeQL languages: {:?}", languages);
+        languages
     }
 
     /// Returns the directory to use for CodeQL operations.
@@ -269,11 +288,13 @@ impl Action {
 
     /// Returns whether attestation is enabled.
     pub fn attestation(&self) -> bool {
+        log::debug!("Attestation enabled: {}", self.attestation);
         self.attestation
     }
 
     /// Returns whether empty databases are allowed.
     pub fn allow_empty_database(&self) -> bool {
+        log::debug!("Allow empty database: {}", self.allow_empty_database);
         self.allow_empty_database
     }
 }
