@@ -180,19 +180,24 @@ pub async fn fetch_extractor(
     }
 
     // Find `codeql-extractor.yml` in the extracted directory using glob
-    log::debug!("Searching for codeql-extractor.yml in {}", extractor_pack.display());
+    log::debug!(
+        "Searching for codeql-extractor.yml in {}",
+        extractor_pack.display()
+    );
     if let Some(glob_result) = glob::glob(
         &extractor_pack
             .join("**/codeql-extractor.yml")
             .to_string_lossy(),
-    )?.next() {
+    )?
+    .next()
+    {
         match glob_result {
             Ok(path) => {
                 // TODO: Load and check the extractor configuration
                 log::debug!("Found extractor configuration at: {path:?}");
                 let full_path = path.parent().unwrap().to_path_buf().canonicalize()?;
                 log::debug!("Using extractor directory: {}", full_path.display());
-                
+
                 // Linux and Macos
                 #[cfg(unix)]
                 {
@@ -207,7 +212,10 @@ pub async fn fetch_extractor(
             }
         }
     } else {
-        log::warn!("No codeql-extractor.yml found in {}", extractor_pack.display());
+        log::warn!(
+            "No codeql-extractor.yml found in {}",
+            extractor_pack.display()
+        );
     }
     Ok(extractor_pack)
 }
