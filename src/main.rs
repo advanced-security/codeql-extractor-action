@@ -165,9 +165,9 @@ async fn main() -> Result<()> {
 
     log::info!("CodeQL :: {codeql:#?}");
 
-    groupend!();
-
     std::fs::create_dir_all(&sarif_output).context("Failed to create results directory")?;
+
+    groupend!();
 
     for (extractor, reporef) in extractors {
         // The language is the name of the extractor
@@ -248,7 +248,7 @@ async fn main() -> Result<()> {
         match codeql
             .database(&database)
             .queries(queries)
-            .output(sarif_path.clone())
+            .sarif(sarif_path.clone())
             .analyze()
             .await
         {
