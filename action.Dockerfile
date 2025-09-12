@@ -1,3 +1,3 @@
-FROM ghcr.io/advanced-security/codeql-extractor-action:v0.1.3
+FROM ghcr.io/advanced-security/codeql-extractor-action:v0.1.4
 
 ENTRYPOINT [ "codeql-extractor-action" ]
