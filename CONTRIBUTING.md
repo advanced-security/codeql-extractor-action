@@ -36,8 +36,41 @@ If you have an idea for a new feature or enhancement, please open an issue on Gi
 
 - [Rust](https://www.rust-lang.org/tools/install)
 - [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
-- [CodeQL](https://codeql.github.com/docs/codeql-cli/getting-started/)
+- [CodeQL](https://codeql.github.com/docs/codeql-cli/getting-started/) (optional as the action will download it for you
   - `gh-codeql` is a great tool to help you with CodeQL CLI.
+
+## Local Setup
+
+### Environment Variables
+
+To run the action locally, you need to set up the following environment variables:
+
+```env
+# DEBUG=1
+GITHUB_REPOSITORY=advanced-security/codeql-extractor-action
+
+INPUT_EXTRACTORS=advanced-security/codeql-extractor-iac@v0.5.0
+INPUT_PACKS=advanced-security/iac-queries@0.5.0
+INPUT_LANGUAGES=iac
+```
+
+These are the inputs to the action. You can modify them as needed.
+
+### Building the Project
+
+To build the project, use the following command:
+
+```bash
+cargo build --release
+```
+
+And to install it on the system, use:
+
+```bash
+cargo install --path .
+```
+
+This means it can be run from anywhere using the command `codeql-extractor-action`.
 
 ### Running Tests
 
