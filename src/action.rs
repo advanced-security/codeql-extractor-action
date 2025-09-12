@@ -202,29 +202,35 @@ impl Action {
     /// # Errors
     /// - If `working_directory()` fails
     /// - If path canonicalization fails
-    fn get_codeql_directories(&self) -> Result<Vec<PathBuf>> {
+    fn get_codeql_directories(&self) -> Vec<PathBuf> {
         let mut paths = Vec::new();
 
         // GITHUB_WORKSPACE
         if let Ok(github_workspace) = std::env::var("GITHUB_WORKSPACE") {
+            log::debug!("GITHUB_WORKSPACE found: {}", github_workspace);
             paths.push(PathBuf::from(github_workspace).join(".codeql"));
         }
 
         // Local CodeQL directory in the working directory
-        if let Ok(local_codeql) = self.working_directory()?.join(".codeql").canonicalize() {
-            paths.push(local_codeql);
+        if let Ok(working_dir) = self.working_directory() {
+            if let Ok(local_codeql) = working_dir.join(".codeql").canonicalize() {
+                log::debug!("Local working directory found: {}", local_codeql.display());
+                paths.push(local_codeql);
+            }
         }
 
         // Runner temp directory
         if let Ok(runner_temp) = std::env::var("RUNNER_TEMP") {
-            paths.push(PathBuf::from(runner_temp).join(".codeql").canonicalize()?);
+            log::debug!("RUNNER_TEMP found: {}", runner_temp);
+            paths.push(PathBuf::from(runner_temp).join(".codeql"));
         }
         // temp_dir
         if let Ok(temp_dir) = std::env::temp_dir().canonicalize() {
+            log::debug!("System temp directory found: {}", temp_dir.display());
             paths.push(temp_dir.join(".codeql"));
         }
 
-        Ok(paths)
+        paths
     }
 
     /// Returns the directory to use for CodeQL operations.
@@ -237,7 +243,10 @@ impl Action {
     /// It uses the parent of the working directory to to stop issues where the
     /// database/sarif files gets indexed by CodeQL.
     pub fn get_codeql_dir(&self) -> Result<PathBuf> {
-        let paths = self.get_codeql_directories()?;
+        let paths = self.get_codeql_directories();
+        if paths.is_empty() {
+            return Err(anyhow::anyhow!("No valid CodeQL directories were found"));
+        }
         log::debug!("Possible CodeQL directories: {:?}", paths);
 
         for path in paths {
