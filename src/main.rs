@@ -287,7 +287,21 @@ async fn main() -> Result<()> {
         groupend!();
     }
 
-    action.set_sarif_results(sarif_output.display().to_string());
+    // If the action is running in Actions, the SARIF file must be a relative path
+    // This is because we assume that this code is running in a container which mounts
+    // the repository at /github/workspace
+    if std::env::var("CI").is_ok() {
+        // If running in a CI environment, set the SARIF as a relative path
+        let relative_path = sarif_output.strip_prefix(&cwd).unwrap_or(&sarif_output);
+        log::debug!(
+            "CI environment detected, setting SARIF path as relative: {}",
+            relative_path.display()
+        );
+        action.set_sarif_results(relative_path.display().to_string());
+    } else {
+        log::debug!("Setting SARIF path as absolute: {}", sarif_output.display());
+        action.set_sarif_results(sarif_output.display().to_string());
+    }
 
     log::info!("All databases created and analyzed");
 
