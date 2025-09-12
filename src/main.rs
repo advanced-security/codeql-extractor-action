@@ -6,9 +6,12 @@ use ghastoolkit::prelude::*;
 use log::{debug, info};
 
 mod action;
+mod codeql;
 mod extractors;
 
 use action::{AUTHORS, Action, BANNER, VERSION};
+
+use crate::codeql::gh_codeql_download;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -41,10 +44,22 @@ async fn main() -> Result<()> {
     if !codeql.is_installed().await {
         let codeql_version = action.codeql_version();
         log::info!("CodeQL not installed, installing `{codeql_version}`...");
-        codeql
-            .install(&octocrab, codeql_version)
-            .await
-            .context("Failed to install CodeQL")?;
+
+        if let Err(error) = codeql.install(&octocrab, codeql_version).await {
+            log::warn!("Failed to install CodeQL: {error:?}");
+            log::info!("Attempting to install CodeQL using GitHub CLI...");
+
+            let location = gh_codeql_download(codeql_version)
+                .await
+                .context("Failed to download CodeQL using GitHub CLI")?;
+
+            codeql = CodeQL::init()
+                .path(location)
+                .build()
+                .await
+                .context("Failed to create CodeQL instance after GitHub CLI installation")?;
+        }
+
         log::info!("CodeQL installed");
     } else {
         log::info!("CodeQL already installed");
