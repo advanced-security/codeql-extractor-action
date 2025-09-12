@@ -1,9 +1,8 @@
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use ghastoolkit::CodeQL;
 
 /// Download the CodeQL CLI using the GitHub CLI
-pub async fn gh_codeql_download(codeql_version: &str)-> Result<String> {
-
+pub async fn gh_codeql_download(codeql_version: &str) -> Result<String> {
     log::info!("Downloading CodeQL Extension for GitHub CLI...");
     tokio::process::Command::new("gh")
         .args(&["extensions", "install", "github/gh-codeql"])

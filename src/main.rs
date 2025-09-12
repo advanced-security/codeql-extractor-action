@@ -49,9 +49,10 @@ async fn main() -> Result<()> {
             log::warn!("Failed to install CodeQL: {error:?}");
             log::info!("Attempting to install CodeQL using GitHub CLI...");
 
-            let location = gh_codeql_download(codeql_version).await
+            let location = gh_codeql_download(codeql_version)
+                .await
                 .context("Failed to download CodeQL using GitHub CLI")?;
-            
+
             codeql = CodeQL::init()
                 .path(location)
                 .build()
