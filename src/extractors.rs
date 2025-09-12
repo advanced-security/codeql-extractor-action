@@ -297,7 +297,7 @@ pub fn update_sarif(path: &PathBuf, extractor: String) -> Result<()> {
     }
 
     // Serialize and write back to file
-    let data = match serde_json::to_string_pretty(&sarif_json) {
+    let data = match serde_json::to_string(&sarif_json) {
         Ok(json) => json,
         Err(e) => {
             log::error!("Failed to serialize updated SARIF JSON: {}", e);
