@@ -25,6 +25,7 @@ pub async fn gh_codeql_download(codeql_version: &str) -> Result<String> {
     log::debug!("Running command: gh extensions install github/gh-codeql");
     let status = tokio::process::Command::new("gh")
         .args(&["extensions", "install", "github/gh-codeql"])
+        .env("GH_TOKEN", std::env::var("GITHUB_TOKEN").unwrap_or_default())
         .status()
         .await
         .context("Failed to execute `gh extensions install github/gh-codeql` command")?;
@@ -45,6 +46,7 @@ pub async fn gh_codeql_download(codeql_version: &str) -> Result<String> {
     log::debug!("Running command: gh codeql set-version {codeql_version}");
     let status = tokio::process::Command::new("gh")
         .args(&["codeql", "set-version", codeql_version])
+        .env("GH_TOKEN", std::env::var("GITHUB_TOKEN").unwrap_or_default())
         .status()
         .await
         .context("Failed to execute `gh codeql set-version` command")?;
@@ -65,6 +67,7 @@ pub async fn gh_codeql_download(codeql_version: &str) -> Result<String> {
     log::debug!("Running command: gh codeql install-stub");
     let status = tokio::process::Command::new("gh")
         .args(&["codeql", "install-stub"])
+        .env("GH_TOKEN", std::env::var("GITHUB_TOKEN").unwrap_or_default())
         .status()
         .await
         .context("Failed to execute `gh codeql install-stub` command")?;
