@@ -288,7 +288,10 @@ async fn main() -> Result<()> {
     if let Ok(_) = std::env::var("CI") {
         // If running in a CI environment, set the SARIF as a relative path
         let relative_path = sarif_output.strip_prefix(&cwd).unwrap_or(&sarif_output);
-        log::debug!("CI environment detected, setting SARIF path as relative: {}", relative_path.display());
+        log::debug!(
+            "CI environment detected, setting SARIF path as relative: {}",
+            relative_path.display()
+        );
         action.set_sarif_results(relative_path.display().to_string());
     } else {
         log::debug!("Setting SARIF path as absolute: {}", sarif_output.display());
