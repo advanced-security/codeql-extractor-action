@@ -16,18 +16,18 @@ publish = false
 [dependencies]
 log = "0.4"
 env_logger = "0.11"
-tokio = { version = "1.45", features = ["full"] }
+tokio = { version = "1.48", features = ["full"] }
 anyhow = "1.0"
 thiserror = "2.0"
 dotenvy = "0.15"
 glob = "0.3"
 # Actions
-ghactions = { version = "^0.16.5", features = ["dotenvy", "log", "generate", "octocrab", "toolcache-all"] }
-ghactions-core = { version = "^0.16.5" }
+ghactions = { version = "^0.18.4", features = ["dotenvy", "log", "generate", "octocrab", "toolcache-all"] }
+ghactions-core = { version = "^0.18.4" }
 
-ghastoolkit = { version = "^0.11", features = ["toolcache"] }
+ghastoolkit = { version = "^0.12", features = ["toolcache"] }
 
 # GitHub API
-octocrab = "^0.44"
+octocrab = "^0.48"
 openssl = { version = "0.10", features = ["vendored"] }
 serde_json = "1.0"
