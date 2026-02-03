@@ -22,12 +22,12 @@ thiserror = "2.0"
 dotenvy = "0.15"
 glob = "0.3"
 # Actions
-ghactions = { version = "^0.18.4", features = ["dotenvy", "log", "generate", "octocrab", "toolcache-all"] }
-ghactions-core = { version = "^0.18.4" }
+ghactions = { version = "^0.16.5", features = ["dotenvy", "log", "generate", "octocrab", "toolcache-all"] }
+ghactions-core = { version = "^0.16.5" }
 
-ghastoolkit = { git = "https://github.com/GeekMasher/ghastoolkit-rs", features = ["toolcache"] }
+ghastoolkit = { version = "^0.11", features = ["toolcache"] }
 
 # GitHub API
-octocrab = "^0.48"
+octocrab = "^0.44"
 openssl = { version = "0.10", features = ["vendored"] }
 serde_json = "1.0"
