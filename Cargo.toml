@@ -31,3 +31,9 @@ ghastoolkit = { version = "^0.12", features = ["toolcache"] }
 octocrab = "^0.48"
 openssl = { version = "0.10", features = ["vendored"] }
 serde_json = "1.0"
+
+# Patch ghastoolkit to fix compilation errors with ghactions-toolcache 0.18.4:
+# 1. Double reference bug: `&asset` -> `asset` in download_asset call
+# 2. Missing error conversion: ToolCacheError -> GHASError via map_err
+[patch.crates-io]
+ghastoolkit = { path = "vendor/ghastoolkit" }

@@ -78,11 +78,13 @@ impl CodeQL {
                 "Downloading CodeQL CLI from GitHub: {}",
                 asset.browser_download_url
             );
-            toolcache.download_asset(&asset, &codeql_archive).await?;
+            toolcache.download_asset(asset, &codeql_archive).await
+                .map_err(|e| GHASError::CodeQLError(e.to_string()))?;
         }
 
         log::info!("Extracting asset to {:?}", path);
-        toolcache.extract_archive(&codeql_archive, &path).await?;
+        toolcache.extract_archive(&codeql_archive, &path).await
+            .map_err(|e| GHASError::CodeQLError(e.to_string()))?;
 
         let codeql_dir = path.join("codeql");
         if !codeql_dir.exists() {
