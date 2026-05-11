@@ -12,8 +12,9 @@ updates:
     reviewers:
       - "advanced-security/oss-maintainers"
     groups:
-      extractor:
-        dependency-type: "production"
+      cargo-all:
+        patterns:
+          - "*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -21,3 +22,7 @@ updates:
       interval: "weekly"
     reviewers:
       - "advanced-security/oss-maintainers"
+    groups:
+      actions-all:
+        patterns:
+          - "*"
