@@ -30,7 +30,7 @@ jobs:
           set -e
 
           if [[ -f .release.yml ]]; then
-            pip install yq > /dev/null
+            pip install -r requirements.txt --require-hashes > /dev/null
             current_version=$(yq -r ".version" .release.yml)
             echo "💻 Current Version :: $current_version"  
             echo "version=$current_version" >> $GITHUB_OUTPUT
@@ -84,5 +84,4 @@ jobs:
       pull-requests: write
     with:
       version: ${{ needs.set-version.outputs.version }}
-
 
